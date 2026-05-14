@@ -119,8 +119,9 @@ class MambaBackend(Backend):
     - `layer_N.residual`  → residual stream after block N (B, T, hidden_size)
     - `layer_N.ssm_state` → final SSM recurrent state after processing the
                             sequence at block N: shape (B, intermediate_size, ssm_state_size).
-                            This is **unique to SSMs and not exposed by any other
-                            mech interp library** — it's the actual "memory" of Mamba.
+                            This exposes the recurrent state used by Mamba-style models —
+                            useful when experiments need access to memory-like state rather
+                            than residual activations alone.
     """
 
     def layer_names(self) -> list[str]:

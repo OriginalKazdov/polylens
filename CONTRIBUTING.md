@@ -9,7 +9,7 @@ Thanks for considering a contribution. Brief guidelines.
 - **Cross-architecture support** (transformer + SSM + hybrid + custom)
 - **Mechanistic interpretability primitives** wrapped under a unified API
 
-We are **not** trying to compete with `transformer_lens` (the canonical transformer-only lib) or `nnsight` (Stanford's modern alternative). We fill the gap they leave: small/non-transformer models with consistent API.
+We are not trying to compete with `transformer_lens` or `nnsight` — those are broader and more mature tools. `polylens` focuses on lightweight, reproducible experiments for small or non-standard architectures where a consistent API across model families is useful.
 
 ## What we welcome
 

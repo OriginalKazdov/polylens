@@ -6,9 +6,18 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-Existing mech-interp tools are strongest around Transformer-centric workflows. `polylens` focuses on **comparable experiments across Transformers, SSMs/Mamba, recurrent models, and custom hybrid architectures** under one lightweight API.
+## What polylens is
 
-The differentiator isn't replacing `transformer_lens` or `nnsight` (both excellent and broader). It's making **cross-architecture experiments easier**: probes, SAE comparisons, circuit-style metrics, logit/tuned lens, model diffs, and explicit Mamba recurrent-state extraction in one place.
+`polylens` is a **small-model interpretability workbench**. It's designed for quick, reproducible experiments across model families — not for large-scale SAE training, production model auditing, or replacing mature Transformer-specific tools.
+
+Use it when you want to ask:
+- *Can I extract comparable activations from different architectures?*
+- *Do linear probes transfer across model families?*
+- *Do induction-like behaviors appear outside attention?*
+- *Did a fine-tuned model drift in specific layers?*
+- *Do dense or rank-1 SAEs reconstruct this model family better at this layer?*
+
+It is **not**: a competitor to `transformer_lens` or `nnsight` (both are broader and more mature), a production audit tool, or a SaaS. It's a small, hackable toolkit.
 
 ```python
 import polylens as mi
@@ -164,7 +173,17 @@ polylens bench state-spaces/mamba-130m-hf --arch mamba
 
 ## Findings — running polylens on a mini-zoo of 7 small models
 
-Each model profiled with `bench.benchmark()` (probes + circuits + dense vs rank-1 SAE). Full JSON in `_research/mini_zoo_leaderboard.json`. ~10 min total compute on CPU.
+Each model profiled with `bench.benchmark()` (probes + circuits + dense vs rank-1 SAE). ~10 min total compute on CPU.
+
+### Reproduce
+
+```bash
+python scripts/reproduce_mini_zoo.py
+# → _research/mini_zoo_leaderboard.json
+# → _research/mini_zoo_leaderboard.md
+```
+
+Skip specific models with `--skip Mamba-370m` if memory-tight. Kazdov-α is included only if the local checkpoint is available.
 
 | Model | Arch | Params | Induction (× chance) | SAE-dense | SAE-rank1 | SSM var |
 |---|---|---|---|---|---|---|
@@ -176,15 +195,23 @@ Each model profiled with `bench.benchmark()` (probes + circuits + dense vs rank-
 | Qwen2.5-0.5B | transformer | 494M | **17,637×** | 0.092 | 0.068 | — |
 | kazdov-α | hybrid | 98M | 2,700× | 0.043 | **0.004** | — |
 
-**Observations** (preliminary — observations from running the library, not formal claims):
+**Open questions raised by this run** (single-seed observations, not formal claims):
 
-- **Induction-like behavior shows up strongly in non-attention architectures.** Mamba — which has no attention mechanism — scores 6378-7730× chance on a synthetic induction-copy test, comparable to or above similarly-sized Transformers. The test itself is behavioral (output-based), so it doesn't presume any particular implementation mechanism. Worth investigating *what* SSMs use to implement this behavior.
-- **Naive logit lens appears poorly calibrated on Mamba.** Applying Pythia's `lm_head` to intermediate residuals surfaces target tokens with depth (Pythia rank 5117 → 77 across 12 layers on "capital of France is _Paris_"). The same procedure on Mamba *degrades* the target with depth (rank 197 → 1049). Mamba's intermediate residuals don't seem to live in vocab-aligned space — `TunedLens.fit()` is motivated for SSMs.
-- **Rank-1 vs dense SAE preference splits by architecture family.** GPT-2, both Mambas, and kazdov-α all reconstruct better with rank-1 factored SAEs at the tested mid-layer. Both Pythias prefer dense. Qwen is marginal. The pattern is suggestive but not yet conclusive — needs layer sweeps + multiple seeds.
-- **Modern transformer training boosts induction strongly.** Qwen2.5-0.5B shows 17,637× induction — 5.4× higher than Pythia-410m at similar size. Likely reflects data curation + training stability improvements since Pythia (2023).
-- **Mamba's SSM-state utilization scales with size.** Variance ratio across diverse inputs: 0.54 (130m) → 0.73 (370m). Larger Mamba models encode more input-specific information in their recurrent state.
+- **Does induction-like behavior require attention heads?** Mamba — which has no attention mechanism — scores 6378-7730× chance on our behavioral induction test, comparable to or above similarly-sized Transformers. The test is behavioral (output-based), so it doesn't presume any specific mechanism. What in SSMs implements this behavior?
+- **Why does naive logit lens degrade with depth on Mamba?** Applying Pythia's `lm_head` to intermediate residuals surfaces the target with depth on Pythia (target rank 5117 → 77 across 12 layers on "capital of France is _Paris_"). The same procedure on Mamba moves the target *away* from top-1 (rank 197 → 1049 across 24 layers). Does this hold across more SSM checkpoints? Is tuned-lens enough to fix it?
+- **Is rank-1 SAE preference architecture-driven or layer-driven?** In this run, GPT-2, both Mambas, and kazdov-α reconstructed better with rank-1 factored SAEs at the tested mid-layer; both Pythias preferred dense; Qwen was marginal. Suggestive but needs layer sweeps + multiple seeds before claiming a pattern.
+- **Does modern transformer training really shift circuit emergence?** Qwen2.5-0.5B shows 17,637× induction — 5.4× higher than Pythia-410m at similar size. Plausibly attributable to data curation + training stability since 2023, but we haven't isolated the cause.
+- **Does Mamba's SSM-state utilization scale with model size?** In this run, the input-dependent variance ratio rose 0.54 (Mamba-130m) → 0.73 (Mamba-370m). Does this trend hold across more checkpoints?
 
-These aren't published results — they're observations from running the library. We'd happily be corrected if anyone finds methodological issues.
+These aren't published findings — they're observations from a single mini-zoo run. Methodological corrections welcome.
+
+### Metrics caveats
+
+- **Induction score** is behavioral (output-based), not proof of a specific circuit. It tells you the model copies `A→B` associations in-context; it doesn't tell you *how*.
+- **SAE reconstruction error** is measured on a small sample of mid-layer activations. Lower is better. Numbers are not comparable across layers with different residual magnitudes (e.g., Pythia L11 has very large residuals which dominate dense SAE recon).
+- **SSM-state variance ratio** is descriptive — it tells you whether the state changes meaningfully across inputs, not whether the state is *causally used* downstream.
+- **Logit lens** results are diagnostic, not a guarantee of representational alignment. Naive logit lens applies the *final* `lm_head` to intermediate residuals — when that fails, it just means the residuals aren't in the final-layer vocab space (e.g., Mamba). `TunedLens` is the fix.
+- All probes/SAEs/circuit tests in InterpBench are **single-seed**. Treat differences <2× as noise.
 
 ---
 

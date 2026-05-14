@@ -57,13 +57,16 @@ def info() -> None:
 @click.option("--arch", default="transformer",
               type=click.Choice(["transformer", "mamba", "kazdov"]),
               help="Architecture family.")
-@click.option("--out", default=None, help="Output JSON file (default: prints only).")
+@click.option("--out", default=None,
+              help="Output file. Format inferred from extension: .json or .md. "
+                   "Without --out, prints markdown to stdout.")
 def bench(model_name: str, arch: str, out: str | None) -> None:
     """Run polylens InterpBench on a HuggingFace model.
 
     Examples:
       polylens bench EleutherAI/pythia-160m --arch transformer
-      polylens bench state-spaces/mamba-130m-hf --arch mamba
+      polylens bench EleutherAI/pythia-160m --arch transformer --out pythia.md
+      polylens bench state-spaces/mamba-130m-hf --arch mamba --out mamba.json
     """
     # Lazy imports keep `polylens info` fast (no torch/transformers).
     import torch
@@ -90,15 +93,27 @@ def bench(model_name: str, arch: str, out: str | None) -> None:
         arch_family=arch_family,
         tokenize_fn=tokenize_fn,
     )
+
+    markdown = bench_mod.profile_to_markdown(profile)
     console.print()
-    console.print(bench_mod.profile_to_markdown(profile))
+    console.print(markdown)
 
     if out:
         from dataclasses import asdict
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
-        with open(out, "w") as f:
-            json.dump(asdict(profile), f, indent=2, default=str)
-        console.print(f"\n[green]Saved profile to {out}[/green]")
+        ext = os.path.splitext(out)[1].lower()
+        if ext == ".md":
+            with open(out, "w") as f:
+                f.write(markdown + "\n")
+            console.print(f"\n[green]Saved markdown report to {out}[/green]")
+        elif ext == ".json" or ext == "":
+            with open(out, "w") as f:
+                json.dump(asdict(profile), f, indent=2, default=str)
+            console.print(f"\n[green]Saved JSON profile to {out}[/green]")
+        else:
+            raise click.UsageError(
+                f"Unsupported --out extension '{ext}'. Use .md or .json."
+            )
 
 
 if __name__ == "__main__":
