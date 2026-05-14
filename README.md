@@ -168,6 +168,47 @@ Source papers reimplemented or wrapped:
 - Targeted Neuron Modulation — arXiv:2605.12290
 - Multi-Agent Sycophancy — arXiv:2605.12991
 
+## Troubleshooting
+
+### "The fast path is not available because ..." warning when loading Mamba
+
+This is normal on CPU and means the C++/CUDA kernels for `mamba-ssm` are not installed.
+Mamba falls back to a slower pure-PyTorch path that **works correctly**, just slower
+(~30s per benchmark instead of ~1s). For mech interp work on small models this is fine.
+
+To enable the fast path on a CUDA machine:
+```bash
+pip install mamba-ssm causal-conv1d
+```
+
+### Custom backend not auto-detected
+
+`Backend.for_model(model, hint="my_backend")` — pass the hint explicitly.
+Auto-detection only knows about HuggingFace `config.model_type` values it recognizes.
+
+### `RuntimeError: Trying to backward through the graph a second time`
+
+This happens if you extract activations and then try to use them in another graph.
+Always call `.detach()` on extracted activations before reusing them, or wrap extraction
+in `torch.no_grad()`. The high-level `probes.fit_probe()` does this for you.
+
+### `dim_decompose` returns NaN
+
+Difference-in-means decomposition requires the source/target prompts to produce
+meaningfully different `metric_fn` outputs. If both prompts give identical metrics,
+the decomposition is undefined.
+
+## Roadmap (post-0.1.0)
+
+- Tuned-lens / Logit-lens
+- More circuit detectors (IOI, name-mover, successor heads)
+- Mamba-2 backend (architecture differs from Mamba-1)
+- Cross-arch SAE feature alignment
+- Model-diff between checkpoints (find what fine-tuning changed)
+- Pretrained SAE collection for common small models
+
+PRs welcome — see CONTRIBUTING.md.
+
 ## License
 
 Apache-2.0
