@@ -1,12 +1,14 @@
 # polylens
 
-**Mechanistic interpretability across architectures — one API for transformers, SSMs (Mamba), and hybrid models.**
+**Mechanistic interpretability experiments across architectures — Transformers, SSMs/Mamba, recurrent models, and hybrids.**
 
 [![CI](https://github.com/OriginalKazdov/polylens/actions/workflows/ci.yml/badge.svg)](https://github.com/OriginalKazdov/polylens/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-Existing mech interp tools (`transformer_lens`, `nnsight`, `sae_lens`) are transformer-only. `polylens` works across architectures with a single API, including **the first open-source Mamba SSM-state extraction**.
+Existing mech-interp tools are strongest around Transformer-centric workflows. `polylens` focuses on **comparable experiments across Transformers, SSMs/Mamba, recurrent models, and custom hybrid architectures** under one lightweight API.
+
+The differentiator isn't replacing `transformer_lens` or `nnsight` (both excellent and broader). It's making **cross-architecture experiments easier**: probes, SAE comparisons, circuit-style metrics, logit/tuned lens, model diffs, and explicit Mamba recurrent-state extraction in one place.
 
 ```python
 import polylens as mi
@@ -17,22 +19,16 @@ model = AutoModelForCausalLM.from_pretrained("state-spaces/mamba-130m-hf")
 
 backend = mi.backends.Backend.for_model(model, hint="mamba")
 
-# Extract Mamba's recurrent SSM state h_t — unique to polylens
+# Extract Mamba's recurrent SSM state h_t (in addition to residual stream)
 ssm = backend.extract(tok("text", return_tensors="pt"), layers=["layer_12.ssm_state"])[0]
 # Shape: (B, intermediate_size, ssm_state_size) = (B, 1536, 16) for mamba-130m
 ```
 
 ---
 
-## Why this exists
-
-Mech interp tools assume transformers. As Mamba, hybrid attention, and custom architectures proliferate, this gap matters: **we can't compare what we can't probe**. `polylens` is the library that probes them all under one API.
-
----
-
 ## What's inside (v0.2.0)
 
-### 7 mech interp methods, one API
+### Core mech-interp methods
 
 | Module | What it does | Source |
 |---|---|---|
@@ -40,18 +36,24 @@ Mech interp tools assume transformers. As Mamba, hybrid attention, and custom ar
 | `sae` | Dense + Rank-1 factored sparse autoencoders | WriteSAE (arXiv:2605.12770) |
 | `neurons` | Top-K contrastive neuron modulation | Targeted Neuron Mod (arXiv:2605.12290) |
 | `attribute` | Activation patching + DIM decomposition | Multi-Agent Sycophancy (arXiv:2605.12991) |
-| `circuits` | Induction head, copy, attention-sink detectors | Olsson et al 2022 |
-| `lens` | Logit lens + Tuned lens (Belrose et al 2023) | this library |
+| `circuits` | Induction, copy, attention-concentration detectors | Olsson et al 2022 |
+| `lens` | Logit lens + Tuned lens | Belrose et al 2023 |
 | `diff` | Model-diff: base vs fine-tuned, find what changed | this library |
-| `transfer` | Cross-arch probe transfer via linear alignment | this library |
-| `bench` | InterpProfile standardized profile | this library |
 
-### 4 backends, one API
+### Experiment infrastructure
 
-| Backend | Models | Unique capability |
+| Module | What it does |
+|---|---|
+| `backends` | Unified extraction API across architectures |
+| `transfer` | Cross-arch probe transfer via paired-activation linear alignment |
+| `bench` | InterpProfile — standardized comparable profile (`mi.bench.benchmark()`) |
+
+### Backends
+
+| Backend | Models | Specific |
 |---|---|---|
 | `transformer` | Pythia, GPT-2, Llama, Mistral, Qwen, MPT, Falcon, GPT-Neo | residual stream |
-| `mamba` | Mamba, Mamba-2 | residual + **`.ssm_state`** (h_t) |
+| `mamba` | Mamba, Mamba-2 | residual + explicit `.ssm_state` (recurrent h_t) |
 | `kazdov` | Kazdov-α hybrid MoBE-BCN+MHA | residual per custom block |
 | `recurrent` | Generic RNN (user subclass) | hidden state per layer |
 
@@ -66,7 +68,7 @@ git clone https://github.com/OriginalKazdov/polylens.git
 cd polylens && pip install -e .
 ```
 
-For Mamba support on CPU you don't need `mamba-ssm` — HF's slow path works. On CUDA install `mamba-ssm` for the fast path.
+For Mamba on CPU you don't need `mamba-ssm` — HF's slow path works. On CUDA install `mamba-ssm` for the fast path.
 
 ---
 
@@ -92,13 +94,14 @@ probe = mi.probes.fit_probe(
 print(probe.metrics)   # {'train_auroc': 1.0, ...}
 ```
 
-### Extract Mamba's SSM internal state (unique)
+### Extract Mamba's SSM recurrent state
 
 ```python
 backend = mi.backends.Backend.for_model(mamba_model, hint="mamba")
 rec = backend.extract(tk("Hello world"), layers=["layer_12.ssm_state"])[0]
 # rec.activations.shape == (B, intermediate_size, ssm_state_size)
-# This is the actual recurrent memory of Mamba — the SSM h_t at end of sequence.
+# This is the actual recurrent memory h_t of Mamba — exposed via the same
+# extraction API used for Transformer residual streams.
 ```
 
 ### Logit lens / tuned lens — see what each layer "thinks"
@@ -159,40 +162,44 @@ polylens bench state-spaces/mamba-130m-hf --arch mamba
 
 ---
 
-## Findings — what we saw running polylens on 7 small models
+## Findings — running polylens on small models
 
-Selected results from running `bench.benchmark()` across model families. Full table + JSON in `_research/mini_zoo_leaderboard.json`.
+Selected observations from `bench.benchmark()` across model families. Full table + JSON in `_research/mini_zoo_leaderboard.json`.
 
-| Model | Arch | Params | Induction (× chance) | SAE rank-1 vs dense | Notes |
-|---|---|---|---|---|---|
-| Pythia-160m | transformer | 162M | **490×** | dense better | baseline |
-| Pythia-410m | transformer | 405M | **3261×** | dense better | 6.6× induction at 2.5× params |
-| GPT-2 | transformer | 124M | **6393×** | **rank-1 ~10× better** | older training, recurrent-friendly residuals? |
-| Mamba-130m | SSM | 130M | TBD (running) | TBD | + SSM-state extraction |
-| Mamba-370m | SSM | 370M | TBD | TBD | scale check |
-| Qwen2.5-0.5B | transformer | 500M | TBD | TBD | modern transformer |
-| kazdov-α | hybrid | 98M | TBD | **rank-1 dominates** | math-pretrained MoBE-BCN+MHA |
+| Model | Arch | Params | Induction (× chance) | Rank-1 SAE vs dense |
+|---|---|---|---|---|
+| Pythia-160m | transformer | 162M | 490× | dense better |
+| Pythia-410m | transformer | 405M | 3261× | dense better |
+| GPT-2 | transformer | 124M | 6393× | rank-1 ~10× better |
+| Mamba-130m | SSM | 130M | 6378× | rank-1 better |
+| Mamba-370m | SSM | 370M | TBD | TBD |
+| Qwen2.5-0.5B | transformer | 500M | TBD | TBD |
+| kazdov-α | hybrid | 98M | 2700× | rank-1 dramatically wins at L6-L7 |
 
-**Cross-architecture observations** (some preliminary, full study in upcoming blog):
+**Cross-architecture observations** (preliminary — full study in upcoming write-up):
 
-- **Induction-head behavior is not transformer-exclusive**. Mamba showed 6378× chance on a related test in our earlier 3-model run (paper-tier finding worth confirming at scale).
-- **Logit lens fails on Mamba**. Pythia logit-lens correctly surfaces target token (rank 5117 → 77 across 12 layers). Mamba logit-lens *degrades* with depth (rank 197 → 1049). Mamba's intermediate residuals are not in vocab-space — tuned-lens is motivated.
-- **Rank-1 SAE preference is layer- and architecture-dependent**, not a clean architectural property. GPT-2 strongly prefers rank-1; Pythia prefers dense; kazdov shows extreme local rank-1 wins at specific layers.
+- **Induction-like behavior may not require attention heads.** Mamba — which has no attention mechanism — shows high induction-test scores comparable to or above similarly-sized Transformers. Worth confirming with larger N.
+- **Naive logit lens appears poorly calibrated on Mamba.** Pythia logit-lens cleanly surfaces target tokens with depth (rank 5117 → 77 in 12 layers on "capital of France"). Mamba logit-lens degrades with depth (rank 197 → 1049). Mamba's intermediate residuals don't seem to live in vocab-aligned space — tuned-lens is motivated for SSMs.
+- **Rank-1 vs dense SAE preference is layer- and architecture-dependent**, not a clean global property. GPT-2 strongly prefers rank-1 (~10× lower recon); Pythia prefers dense; kazdov shows extreme local rank-1 wins at specific layers.
+
+These aren't published results — they're observations from running the library. We'd happily be corrected if anyone finds methodological issues.
 
 ---
 
 ## Honest limits
 
-`polylens` is a v0.2 release. What it does well: cross-architecture mech interp primitives, unified API, real findings, validated on 3+ architectures. What it doesn't do (yet):
+`polylens` is a v0.2 release. What it does well: cross-architecture mech-interp primitives, unified API, real observable findings, validated on multiple architectures. What it doesn't do yet:
 
-- No causal scrubbing (gold-standard verification)
-- No interactive notebook viz (matplotlib helpers TBD)
-- No multi-token circuit detection (IOI, name-mover) — only induction/copy/concentration
-- Mamba-2 backend support is partial
-- Pretrained SAE collection isn't shipped (you train your own per layer)
-- Probe transfer requires same-tokenizer paired data
+- No causal scrubbing (gold-standard circuit verification)
+- No interactive notebook viz (matplotlib helpers are TBD)
+- Circuit detection is limited to induction / copy / attention-concentration — no IOI, name-mover, or successor heads yet
+- Mamba-2 backend support is partial (Mamba-1 fully supported)
+- No pretrained SAE collection (you train your own per layer)
+- Probe transfer assumes same-tokenizer paired data
 
-See `CONTRIBUTING.md` for what we welcome (new backends, new circuit detectors, viz helpers).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for what we welcome (new backends, new circuit detectors, viz helpers).
+
+For mature transformer-only work prefer [`transformer_lens`](https://github.com/TransformerLensOrg/TransformerLens) (much broader feature surface) or [`nnsight`](https://nnsight.net/) (modern PyTorch tracing). They overlap with us on the transformer side; we focus where they're lighter.
 
 ---
 
@@ -200,14 +207,14 @@ See `CONTRIBUTING.md` for what we welcome (new backends, new circuit detectors, 
 
 ```bibtex
 @misc{dovzak2026polylens,
-  title  = {polylens: A cross-architecture mechanistic interpretability toolkit},
+  title  = {polylens: Cross-architecture mechanistic interpretability experiments},
   author = {Juan Cruz Dovzak},
   year   = {2026},
   url    = {https://github.com/OriginalKazdov/polylens}
 }
 ```
 
-Papers reimplemented or wrapped:
+Source papers reimplemented or wrapped:
 - WriteSAE — arXiv:2605.12770
 - Drop the Act / ProFIL — arXiv:2605.11467
 - Targeted Neuron Modulation — arXiv:2605.12290
@@ -221,7 +228,7 @@ Papers reimplemented or wrapped:
 
 ### "The fast path is not available because ..." (Mamba on CPU)
 
-Normal. Mamba falls back to a slow pure-PyTorch path that works correctly (~30s per benchmark instead of ~1s). Install `pip install mamba-ssm causal-conv1d` only on CUDA machines.
+Normal. Mamba falls back to a slow pure-PyTorch path that works correctly (~30s per benchmark vs ~1s on CUDA). Install `pip install mamba-ssm causal-conv1d` only on CUDA machines.
 
 ### Custom backend not auto-detected
 
@@ -236,13 +243,13 @@ Activations from `Backend.extract()` carry the autograd graph by default. Call `
 ## Roadmap (post-0.2.0)
 
 - Multi-token circuit detection: IOI, name-mover, successor heads
-- Mamba-2 backend (architecture differs from Mamba-1)
+- Mamba-2 backend with same `.ssm_state` API
 - Cross-arch SAE feature alignment (extend `transfer.py` from probes to features)
 - Pretrained SAE collection for common small models
 - Plotly/matplotlib viz helpers
 - HuggingFace Space demo
 
-PRs welcome — see `CONTRIBUTING.md`.
+PRs welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
