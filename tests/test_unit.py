@@ -20,8 +20,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 def test_imports():
     """All modules import without errors."""
     import polylens
-    from polylens import probes, sae, neurons, attribute, backends, circuits, transfer, bench
-    assert polylens.__version__ == "0.1.0"
+    from polylens import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens
+    assert polylens.__version__ == "0.2.0"
+
+
+def test_lens_dataclasses():
+    """LensResult and LayerPrediction instantiate and serialize."""
+    from polylens.lens import LensResult, LayerPrediction
+    lp = LayerPrediction(layer=0, layer_name="layer_0.residual",
+                         top_tokens=[(1, "a", 0.5)], target_prob=0.1,
+                         target_rank=10, entropy=2.0)
+    r = LensResult(prompt="test", layers=[lp])
+    md = r.to_markdown()
+    assert "test" in md
 
 
 def test_sae_dense_synthetic():

@@ -55,6 +55,42 @@ def resolve_layer_module(model: Any, layer_name: str):
     return None
 
 
+_UNEMBED_PATHS = [
+    "lm_head",        # Llama, Pythia, Mistral, Mamba, kazdov, most HF CausalLMs
+    "embed_out",      # some HF models
+    "output_layer",   # some custom models
+]
+
+_FINAL_NORM_PATHS: list[tuple[str, str | None]] = [
+    ("model", "norm"),                  # Llama / Mistral
+    ("gpt_neox", "final_layer_norm"),    # Pythia
+    ("transformer", "ln_f"),             # GPT-2 / Falcon
+    ("backbone", "norm_f"),              # Mamba
+    ("ln_f", None),                      # kazdov (top-level)
+]
+
+
+def resolve_unembedding(model: Any):
+    """Find the model's unembedding / lm_head module. Returns nn.Module or None."""
+    for path in _UNEMBED_PATHS:
+        m = getattr(model, path, None)
+        if m is not None:
+            return m
+    return None
+
+
+def resolve_final_norm(model: Any):
+    """Find the model's final pre-unembedding layer norm. Returns module or None."""
+    for parent_attr, child_attr in _FINAL_NORM_PATHS:
+        parent_obj = getattr(model, parent_attr, None)
+        if parent_obj is None:
+            continue
+        norm = parent_obj if child_attr is None else getattr(parent_obj, child_attr, None)
+        if norm is not None:
+            return norm
+    return None
+
+
 def resolve_subcomponent_module(model: Any, idx: int, component: str):
     """Find an attention or MLP submodule inside a layer at index `idx`.
 

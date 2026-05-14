@@ -14,9 +14,9 @@ Each method exposes the same architecture-agnostic API:
 Designed for cross-architecture comparison: transformer, Mamba/SSM, custom RNN.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
-from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench
+from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens
 
 # Kazdov backend registers itself on import — optional, only if kazdov repo present
 try:
@@ -24,4 +24,7 @@ try:
 except ImportError:
     pass
 
-__all__ = ["probes", "sae", "neurons", "attribute", "backends", "__version__"]
+__all__ = [
+    "probes", "sae", "neurons", "attribute", "backends",
+    "circuits", "transfer", "bench", "lens", "__version__",
+]
