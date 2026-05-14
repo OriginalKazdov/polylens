@@ -20,8 +20,24 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 def test_imports():
     """All modules import without errors."""
     import polylens
-    from polylens import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens
+    from polylens import (probes, sae, neurons, attribute, backends,
+                            circuits, transfer, bench, lens, diff)
     assert polylens.__version__ == "0.2.0"
+
+
+def test_diff_dataclasses():
+    """ModelDiff dataclasses instantiate + markdown renders."""
+    from polylens.diff import ModelDiff, LayerDrift, CircuitDelta
+    md = ModelDiff(arch_family="transformer", n_layers=2, n_calibration_texts=4)
+    md.layer_drift.append(LayerDrift(layer=0, layer_name="layer_0.residual",
+                                       mean_l2_delta=0.5, relative_drift=0.05,
+                                       cosine_similarity=0.99,
+                                       top_shifted_neurons=[(3, 0.4), (1, 0.2)]))
+    md.circuit_deltas.append(CircuitDelta(name="induction", base_score=1.0,
+                                            fine_tuned_score=1.2, delta=0.2,
+                                            relative_change=0.2))
+    rendered = md.to_markdown()
+    assert "transformer" in rendered and "induction" in rendered
 
 
 def test_lens_dataclasses():

@@ -16,7 +16,7 @@ Designed for cross-architecture comparison: transformer, Mamba/SSM, custom RNN.
 
 __version__ = "0.2.0"
 
-from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens
+from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens, diff
 
 # Kazdov backend registers itself on import — optional, only if kazdov repo present
 try:
