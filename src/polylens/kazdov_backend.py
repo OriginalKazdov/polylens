@@ -97,31 +97,39 @@ class KazdovBackend(Backend):
         layers = layers or self.layer_names()
         captures: dict[str, torch.Tensor] = {}
 
-        # Register hooks on each requested block
+        # Register a forward hook on each requested block.
         hooks = []
         for layer_name in layers:
             idx = int(layer_name.split("_")[1].split(".")[0])
-            if idx >= len(self.model.blocks): continue
+            if idx >= len(self.model.blocks):
+                continue
             block = self.model.blocks[idx]
 
             def make_hook(name):
-                def h(module, inp, out):
-                    captures[name] = out.detach() if isinstance(out, torch.Tensor) else out[0].detach()
-                return h
+                def hook(module, inp, out):
+                    tensor = out if isinstance(out, torch.Tensor) else out[0]
+                    captures[name] = tensor.detach()
+                return hook
             hooks.append(block.register_forward_hook(make_hook(layer_name)))
 
         try:
-            # Forward — kazdov signature: model(input_ids, attention_mask=None)
+            # Kazdov forward signature: model(input_ids, attention_mask=None)
             with torch.no_grad():
-                input_ids = inputs["input_ids"] if isinstance(inputs, dict) else inputs
-                attn = inputs.get("attention_mask") if isinstance(inputs, dict) else None
+                if isinstance(inputs, dict):
+                    input_ids = inputs["input_ids"]
+                    attn = inputs.get("attention_mask")
+                else:
+                    input_ids = inputs
+                    attn = None
                 self.model(input_ids, attention_mask=attn)
         finally:
-            for h in hooks: h.remove()
+            for h in hooks:
+                h.remove()
 
         records = []
         for layer_name in layers:
-            if layer_name not in captures: continue
+            if layer_name not in captures:
+                continue
             records.append(ActivationRecord(
                 layer_name=layer_name,
                 activations=captures[layer_name],

@@ -1,71 +1,91 @@
-"""CLI for polylens."""
+"""Command-line interface for polylens."""
 from __future__ import annotations
+
 import json
 import os
+
 import click
 from rich.console import Console
 from rich.table import Table
 
+from . import __version__
 
 console = Console()
 
 
 @click.group()
-def cli():
-    """polylens — unified mech interp toolkit."""
-    pass
+def cli() -> None:
+    """polylens — cross-architecture mechanistic interpretability toolkit."""
 
 
 @cli.command()
-def info():
+def info() -> None:
     """Show available methods + supported backends."""
-    t = Table(title="polylens v0.1.0")
-    t.add_column("Method"); t.add_column("Module"); t.add_column("Source paper")
-    t.add_row("Probes", "probes.fit_probe", "Drop the Act (2605.11467)")
-    t.add_row("SAE", "sae.fit_sae", "WriteSAE (2605.12770)")
-    t.add_row("Neuron mod", "neurons.find_neurons", "Targeted Neuron Mod (2605.12290)")
-    t.add_row("Activation patch", "attribute.activation_patch", "Multi-Agent Sycophancy (2605.12991)")
-    t.add_row("Cross-arch transfer", "transfer.evaluate_transfer", "this library")
-    t.add_row("Circuit detection", "circuits.run_all_circuits", "this library")
-    t.add_row("InterpBench", "bench.benchmark", "this library")
-    console.print(t)
+    methods = Table(title=f"polylens v{__version__}")
+    methods.add_column("Method")
+    methods.add_column("Module")
+    methods.add_column("Source paper")
+    for row in (
+        ("Probes",              "probes.fit_probe",           "Drop the Act (2605.11467)"),
+        ("SAE",                 "sae.fit_sae",                "WriteSAE (2605.12770)"),
+        ("Neuron mod",          "neurons.find_neurons",       "Targeted Neuron Mod (2605.12290)"),
+        ("Activation patch",    "attribute.activation_patch", "Multi-Agent Sycophancy (2605.12991)"),
+        ("Cross-arch transfer", "transfer.evaluate_transfer", "this library"),
+        ("Circuit detection",   "circuits.run_all_circuits",  "this library"),
+        ("Logit/tuned lens",    "lens.logit_lens",            "Belrose et al 2023"),
+        ("Model diff",          "diff.compare",               "this library"),
+        ("InterpBench",         "bench.benchmark",            "this library"),
+    ):
+        methods.add_row(*row)
+    console.print(methods)
 
-    t2 = Table(title="Backends")
-    t2.add_column("Name"); t2.add_column("Architecture family")
-    t2.add_row("transformer", "HuggingFace decoder LMs (Llama, GPT, Qwen, Pythia)")
-    t2.add_row("mamba", "Mamba / Mamba-2 SSM — UNIQUE: exposes .ssm_state")
-    t2.add_row("kazdov", "Kazdov-α hybrid MoBE-BCN+MHA")
-    t2.add_row("recurrent", "Generic RNN (subclass per model)")
-    console.print(t2)
+    backends = Table(title="Backends")
+    backends.add_column("Name")
+    backends.add_column("Architecture family")
+    for row in (
+        ("transformer", "HuggingFace decoder LMs (Llama, GPT, Qwen, Pythia, ...)"),
+        ("mamba",       "Mamba / Mamba-2 SSM — exposes .ssm_state (recurrent h_t)"),
+        ("kazdov",      "Kazdov-α hybrid MoBE-BCN+MHA"),
+        ("recurrent",   "Generic RNN (subclass per model)"),
+    ):
+        backends.add_row(*row)
+    console.print(backends)
 
 
 @cli.command()
 @click.argument("model_name")
-@click.option("--arch", default="transformer", help="Architecture family: transformer|mamba|kazdov")
-@click.option("--out", default=None, help="Output JSON file (default: prints only)")
-def bench(model_name: str, arch: str, out: str | None):
-    """Run InterpBench on a HuggingFace model.
+@click.option("--arch", default="transformer",
+              type=click.Choice(["transformer", "mamba", "kazdov"]),
+              help="Architecture family.")
+@click.option("--out", default=None, help="Output JSON file (default: prints only).")
+def bench(model_name: str, arch: str, out: str | None) -> None:
+    """Run polylens InterpBench on a HuggingFace model.
 
-    Example: polylens bench EleutherAI/pythia-160m --arch transformer
-             polylens bench state-spaces/mamba-130m-hf --arch mamba
+    Examples:
+      polylens bench EleutherAI/pythia-160m --arch transformer
+      polylens bench state-spaces/mamba-130m-hf --arch mamba
     """
-    from . import bench as bench_mod
+    # Lazy imports keep `polylens info` fast (no torch/transformers).
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
+    from . import bench as bench_mod
+
     console.print(f"[cyan]→ Loading {model_name}…[/cyan]")
     tok = AutoTokenizer.from_pretrained(model_name)
-    if tok.pad_token is None: tok.pad_token = tok.eos_token
+    if tok.pad_token is None:
+        tok.pad_token = tok.eos_token
     model = AutoModelForCausalLM.from_pretrained(model_name, dtype=torch.float32)
     model.eval()
 
     def tokenize_fn(texts):
         return tok(texts, return_tensors="pt", padding=True, truncation=True, max_length=32)
 
-    arch_family = {"transformer": "transformer", "mamba": "ssm", "kazdov": "hybrid"}.get(arch, "custom")
+    arch_family = {"transformer": "transformer", "mamba": "ssm", "kazdov": "hybrid"}[arch]
     profile = bench_mod.benchmark(
         model_name=model_name,
-        model=model, tokenizer=tok,
+        model=model,
+        tokenizer=tok,
         backend_hint=arch,
         arch_family=arch_family,
         tokenize_fn=tokenize_fn,

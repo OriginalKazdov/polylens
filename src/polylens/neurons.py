@@ -8,7 +8,7 @@
 5. At inference: multiply selected neuron activations by scalar m
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import torch
 from .backends import Backend
 from ._utils import resolve_layer_module
@@ -37,7 +37,8 @@ class NeuronEdit:
         hooks = []
         for layer_name, indices in self.layer_to_indices.items():
             module = resolve_layer_module(model, layer_name)
-            if module is None: continue
+            if module is None:
+                continue
 
             indices_local = indices
 
@@ -59,10 +60,17 @@ class NeuronEdit:
 
 
 class _HookContext:
-    def __init__(self, hooks): self.hooks = hooks
-    def __enter__(self): return self
+    """Auto-removes forward hooks when used as a `with` block."""
+
+    def __init__(self, hooks):
+        self.hooks = hooks
+
+    def __enter__(self):
+        return self
+
     def __exit__(self, *args):
-        for h in self.hooks: h.remove()
+        for h in self.hooks:
+            h.remove()
 
 
 def find_neurons(

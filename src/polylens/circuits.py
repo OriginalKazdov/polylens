@@ -96,10 +96,11 @@ def induction_head_score(
         last_logits = logits[0, -1, :]
         probs = F.softmax(last_logits, dim=-1)
 
-        # Did model predict b1?
+        # Did the model predict b1 as top-1?
         pred = int(torch.argmax(last_logits).item())
-        if pred == b1: successes += 1
-        # Rank of b1 in logits (lower = better)
+        if pred == b1:
+            successes += 1
+        # Rank of b1 in the logit distribution (0 = predicted top-1).
         rank = int((last_logits > last_logits[b1]).sum().item())
         rank_sum += rank
         prob_target_sum += float(probs[b1].item())
@@ -153,23 +154,23 @@ def copy_score(
         words = rng.sample(word_pool, n_words)
         prompt = f"list: {' '.join(words)}. list: "
         ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
-        original_len = ids.shape[1]
+        ids.shape[1]
 
         # Token IDs for target words (first token of each)
         target_tokens = []
         for w in words:
             target_tokens.append(tokenizer(" " + w, add_special_tokens=False).input_ids[0])
 
-        # Autoregressively predict n_words tokens
+        # Autoregressively predict n_words tokens, chaining the model's own
+        # predictions (not teacher-forcing) — measures cumulative copy ability.
         cur = ids.clone()
         for tgt in target_tokens:
             logits = _model_logits(model, cur)
             next_tok = int(torch.argmax(logits[0, -1, :]).item())
-            if next_tok == tgt: correct += 1
+            if next_tok == tgt:
+                correct += 1
             total += 1
             cur = torch.cat([cur, torch.tensor([[next_tok]], device=device)], dim=1)
-            # Use teacher-forcing with predicted next for fair eval
-            # (we use actual predicted to chain — measures cumulative copy ability)
 
     acc = correct / total if total > 0 else 0.0
     # Random baseline for copying is ~1/vocab_size; effectively ~0

@@ -16,7 +16,7 @@ Output: dataclass `InterpProfile` with all scores, JSON-serializable.
 A model's "InterpProfile" is its interp signature.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 import time
 import torch
 
@@ -161,7 +161,7 @@ def benchmark(
     backend = Backend.for_model(model, hint=backend_hint)
     t_start = time.time()
 
-    n_layers = len(backend.layer_names())
+    len(backend.layer_names())
     # Filter to only residual layers if mixed (e.g., Mamba has both .residual and .ssm_state)
     residual_layers = [n for n in backend.layer_names() if ".residual" in n]
     n_blocks = len(residual_layers)
@@ -176,10 +176,14 @@ def benchmark(
         hidden_dim=hidden_dim,
     )
 
-    # Choose representative layers
-    if sentiment_layer is None: sentiment_layer = n_blocks // 4   # early
-    if math_layer is None:      math_layer = n_blocks // 2        # mid
-    if sae_layer is None:       sae_layer = n_blocks // 2
+    # Choose representative layers: sentiment probes at shallow depth, math
+    # and SAE at mid-depth. Each can be overridden by the caller.
+    if sentiment_layer is None:
+        sentiment_layer = n_blocks // 4
+    if math_layer is None:
+        math_layer = n_blocks // 2
+    if sae_layer is None:
+        sae_layer = n_blocks // 2
 
     try:
         profile.probe_sentiment_auroc = _run_probe(
@@ -240,8 +244,8 @@ def profile_to_markdown(profile: InterpProfile) -> str:
         f"### {profile.model_name}",
         f"  Arch: {profile.arch_family} | Params: {profile.n_params/1e6:.1f}M | "
         f"Layers: {profile.n_layers} | Hidden: {profile.hidden_dim}",
-        f"  | Test | Score |",
-        f"  |------|-------|",
+        "  | Test | Score |",
+        "  |------|-------|",
         f"  | Sentiment probe AUROC    | {profile.probe_sentiment_auroc:.3f} |",
         f"  | Math probe AUROC          | {profile.probe_math_auroc:.3f} |",
         f"  | Induction head (×chance)  | {profile.induction_head_relative:>.1f} |",

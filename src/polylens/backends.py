@@ -15,7 +15,7 @@ from __future__ import annotations
 import abc
 import torch
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass
@@ -89,8 +89,10 @@ class TransformerBackend(Backend):
 
     def extract(self, inputs, layers=None):
         layers = layers or self.layer_names()
-        # Use HF's output_hidden_states=True for clean extraction
-        outputs = self.model(**inputs, output_hidden_states=True, return_dict=True)
+        # Use HF's output_hidden_states=True for clean extraction.
+        # Wrap in no_grad: extraction shouldn't build a backward graph.
+        with torch.no_grad():
+            outputs = self.model(**inputs, output_hidden_states=True, return_dict=True)
         records = []
         hidden_states = outputs.hidden_states  # tuple of (n_layers+1) tensors
         for layer_name in layers:

@@ -100,15 +100,16 @@ def evaluate_transfer(
     4. Transfer source probe via M, apply to target activations of test_pos/neg
     5. Compare AUROCs.
     """
-    # -- 1. Learn alignment from paired activations
-    src_inputs = source_tokenize(align_texts)
-    tgt_inputs = target_tokenize(align_texts)
-    with torch.no_grad():
-        src_align = source_backend.extract(src_inputs, layers=[source_layer])[0].activations.detach()
-        tgt_align = target_backend.extract(tgt_inputs, layers=[target_layer])[0].activations.detach()
-    # Pool seq dim by mean
-    if src_align.dim() == 3: src_align = src_align.mean(dim=1)
-    if tgt_align.dim() == 3: tgt_align = tgt_align.mean(dim=1)
+    def _extract_pooled(backend, tokenize, texts: list[str], layer: str) -> torch.Tensor:
+        """Extract activations and pool to (N, hidden_dim) by averaging seq dim."""
+        with torch.no_grad():
+            rec = backend.extract(tokenize(texts), layers=[layer])[0]
+            acts = rec.activations.detach()
+        return acts.mean(dim=1) if acts.dim() == 3 else acts
+
+    # -- 1. Learn alignment from paired activations on the same texts.
+    src_align = _extract_pooled(source_backend, source_tokenize, align_texts, source_layer)
+    tgt_align = _extract_pooled(target_backend, target_tokenize, align_texts, target_layer)
     M = learn_alignment(src_align, tgt_align)
 
     # -- 2. Train source probe (Pythia-style) on source activations
@@ -138,13 +139,11 @@ def evaluate_transfer(
     # -- 4. Transfer: project w_src into target space via M
     w_transferred, b_transferred = transfer_probe(w_src, b_src, M)
 
-    # -- 5. Evaluate on test set
+    # -- 5. Evaluate on the test set.
     with torch.no_grad():
-        # Source baseline: source probe on source test data
-        src_test_acts_pos = source_backend.extract(source_tokenize(test_pos), layers=[source_layer])[0].activations.detach()
-        src_test_acts_neg = source_backend.extract(source_tokenize(test_neg), layers=[source_layer])[0].activations.detach()
-        if src_test_acts_pos.dim() == 3: src_test_acts_pos = src_test_acts_pos.mean(dim=1)
-        if src_test_acts_neg.dim() == 3: src_test_acts_neg = src_test_acts_neg.mean(dim=1)
+        # Source baseline: source probe on source test data.
+        src_test_acts_pos = _extract_pooled(source_backend, source_tokenize, test_pos, source_layer)
+        src_test_acts_neg = _extract_pooled(source_backend, source_tokenize, test_neg, source_layer)
         src_scores = torch.cat([
             src_probe_net(src_test_acts_pos).squeeze(-1),
             src_probe_net(src_test_acts_neg).squeeze(-1),
@@ -155,11 +154,9 @@ def evaluate_transfer(
         ])
         baseline_source = auroc_from_scores(src_scores, src_labels)
 
-        # Target baseline: target probe on target test data
-        tgt_test_acts_pos = target_backend.extract(target_tokenize(test_pos), layers=[target_layer])[0].activations.detach()
-        tgt_test_acts_neg = target_backend.extract(target_tokenize(test_neg), layers=[target_layer])[0].activations.detach()
-        if tgt_test_acts_pos.dim() == 3: tgt_test_acts_pos = tgt_test_acts_pos.mean(dim=1)
-        if tgt_test_acts_neg.dim() == 3: tgt_test_acts_neg = tgt_test_acts_neg.mean(dim=1)
+        # Target baseline: target probe on target test data.
+        tgt_test_acts_pos = _extract_pooled(target_backend, target_tokenize, test_pos, target_layer)
+        tgt_test_acts_neg = _extract_pooled(target_backend, target_tokenize, test_neg, target_layer)
         tgt_probe_net = pf_tgt.probe.net
         tgt_scores = torch.cat([
             tgt_probe_net(tgt_test_acts_pos).squeeze(-1),

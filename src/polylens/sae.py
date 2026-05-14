@@ -113,13 +113,15 @@ def fit_sae(
     activations = activations.to(device)
 
     n = len(activations)
-    last_metrics = {}
-    for epoch in range(epochs):
+    last_metrics: dict = {}
+    for _ in range(epochs):
         perm = torch.randperm(n)
         for b in range(0, n, config.batch_size):
-            batch = activations[perm[b:b+config.batch_size]]
+            batch = activations[perm[b:b + config.batch_size]]
             loss, metrics = sae.loss(batch)
-            opt.zero_grad(); loss.backward(); opt.step()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
             last_metrics = metrics
     sae.last_metrics = last_metrics
     return sae

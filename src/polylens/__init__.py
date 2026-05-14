@@ -26,5 +26,5 @@ except ImportError:
 
 __all__ = [
     "probes", "sae", "neurons", "attribute", "backends",
-    "circuits", "transfer", "bench", "lens", "__version__",
+    "circuits", "transfer", "bench", "lens", "diff", "__version__",
 ]
