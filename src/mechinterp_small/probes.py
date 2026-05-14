@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from .backends import Backend
 
 
@@ -45,7 +44,8 @@ class Probe(nn.Module):
             raise ValueError(f"Unknown probe_type: {config.probe_type}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (batch, seq_len, hidden_dim) → (batch, seq_len, 1)
+        """Apply probe. Accepts (N, hidden_dim) or (N, seq, hidden_dim); returns
+        same leading dims with the final hidden_dim collapsed to scalar logits."""
         return self.net(x).squeeze(-1)
 
 
@@ -81,21 +81,21 @@ class ProbeFit:
         opt = torch.optim.AdamW(self.probe.parameters(), lr=lr)
         loss_fn = nn.BCEWithLogitsLoss()
 
-        for epoch in range(epochs):
+        for _ in range(epochs):
             self.probe.train()
-            # Mini-batch SGD
             perm = train_idx[torch.randperm(len(train_idx))]
             for b in range(0, len(perm), batch_size):
                 batch = perm[b:b+batch_size]
-                logits = self.probe(activations[batch].unsqueeze(1)).squeeze(-1)
+                logits = self.probe(activations[batch])
                 loss = loss_fn(logits, labels[batch])
-                opt.zero_grad(); loss.backward(); opt.step()
+                opt.zero_grad()
+                loss.backward()
+                opt.step()
 
-        # Eval
         self.probe.eval()
         with torch.no_grad():
-            train_logits = self.probe(activations[train_idx].unsqueeze(1)).squeeze(-1)
-            val_logits = self.probe(activations[val_idx].unsqueeze(1)).squeeze(-1)
+            train_logits = self.probe(activations[train_idx])
+            val_logits = self.probe(activations[val_idx])
         return {
             "train_auroc": _auroc(train_logits, labels[train_idx]),
             "val_auroc": _auroc(val_logits, labels[val_idx]),

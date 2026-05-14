@@ -10,8 +10,8 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import torch
-import torch.nn as nn
 from .backends import Backend
+from ._utils import resolve_layer_module
 
 
 @dataclass
@@ -36,7 +36,7 @@ class NeuronEdit:
         """
         hooks = []
         for layer_name, indices in self.layer_to_indices.items():
-            module = _resolve_module(model, layer_name)
+            module = resolve_layer_module(model, layer_name)
             if module is None: continue
 
             indices_local = indices
@@ -108,46 +108,3 @@ def find_neurons(
     )
 
 
-def _resolve_module(model, layer_name: str):
-    """Find the actual nn.Module corresponding to a layer_name string.
-
-    Heuristic that walks common HF naming conventions across model families:
-    - Llama/Mistral/Qwen: model.model.layers[i]
-    - GPT-2:              model.transformer.h[i]
-    - Pythia/GPT-NeoX:    model.gpt_neox.layers[i]
-    - Falcon:             model.transformer.h[i]
-    - MPT:                model.transformer.blocks[i]
-    - Mamba:              model.backbone.layers[i]
-    - Direct:             model.layers[i], model.h[i]
-    """
-    try:
-        idx_part = layer_name.split("_")[1].split(".")[0]
-        idx = int(idx_part)
-    except (IndexError, ValueError):
-        return None
-
-    candidate_paths = [
-        ("model", "layers"),
-        ("transformer", "h"),
-        ("transformer", "blocks"),
-        ("gpt_neox", "layers"),       # Pythia
-        ("backbone", "layers"),       # Mamba
-        ("layers", None),
-        ("h", None),
-        ("blocks", None),
-    ]
-    for parent, child in candidate_paths:
-        parent_obj = getattr(model, parent, None)
-        if parent_obj is None:
-            continue
-        if child is None:
-            layers = parent_obj
-        else:
-            layers = getattr(parent_obj, child, None)
-        if layers is None:
-            continue
-        try:
-            return layers[idx]
-        except (IndexError, TypeError):
-            continue
-    return None

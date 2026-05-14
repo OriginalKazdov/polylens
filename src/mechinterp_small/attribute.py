@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import torch
 from .backends import Backend
+from ._utils import resolve_layer_module, resolve_subcomponent_module
 
 
 @dataclass
@@ -52,7 +53,7 @@ def activation_patch(
     hooks = []
     for layer_name, src_rec in zip(layer_names, src_acts):
         idx = int(layer_name.split("_")[1].split(".")[0])
-        module = _get_layer_module(model, idx)
+        module = resolve_layer_module(model, f"layer_{idx}.residual")
         if module is None: continue
         src_h = src_rec.activations
 
@@ -126,7 +127,7 @@ def dim_decompose(
         src_acts_by_layer = {}
         # Need to capture source activations at this component
         for idx in layer_indices:
-            module = _get_subcomponent_module(model, idx, comp)
+            module = resolve_subcomponent_module(model, idx, comp)
             if module is None: continue
             captured = []
             def capture(mod, inp, out, store=captured):
@@ -141,7 +142,7 @@ def dim_decompose(
         patch_hooks = []
         for idx in layer_indices:
             if idx not in src_acts_by_layer: continue
-            module = _get_subcomponent_module(model, idx, comp)
+            module = resolve_subcomponent_module(model, idx, comp)
             if module is None: continue
             captured_out = src_acts_by_layer[idx][0]
             def patch(mod, inp, out, repl=captured_out):
@@ -165,35 +166,3 @@ def dim_decompose(
     )
 
 
-def _get_layer_module(model, idx: int):
-    """Resolve layer module across HF naming conventions (mirrors neurons._resolve_module)."""
-    candidate_paths = [
-        ("model", "layers"),
-        ("transformer", "h"),
-        ("transformer", "blocks"),
-        ("gpt_neox", "layers"),
-        ("backbone", "layers"),
-        ("layers", None),
-        ("h", None),
-        ("blocks", None),
-    ]
-    for parent, child in candidate_paths:
-        parent_obj = getattr(model, parent, None)
-        if parent_obj is None: continue
-        layers = parent_obj if child is None else getattr(parent_obj, child, None)
-        if layers is None: continue
-        try: return layers[idx]
-        except (IndexError, TypeError): continue
-    return None
-
-
-def _get_subcomponent_module(model, idx: int, comp: str):
-    layer = _get_layer_module(model, idx)
-    if layer is None: return None
-    if comp == "attention":
-        for attr in ("self_attn", "attn", "attention"):
-            if hasattr(layer, attr): return getattr(layer, attr)
-    elif comp == "mlp":
-        for attr in ("mlp", "feed_forward", "ffn"):
-            if hasattr(layer, attr): return getattr(layer, attr)
-    return None

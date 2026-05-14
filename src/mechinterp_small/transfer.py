@@ -12,7 +12,6 @@ This tests: do probe directions from one architecture transfer to another?
 from __future__ import annotations
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from dataclasses import dataclass
 
 
