@@ -14,7 +14,7 @@ Each method exposes the same architecture-agnostic API:
 Designed for cross-architecture comparison: transformer, Mamba/SSM, custom RNN.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens, diff
 

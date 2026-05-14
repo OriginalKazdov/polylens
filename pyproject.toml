@@ -1,6 +1,6 @@
 [project]
 name = "polylens"
-version = "0.2.0"
+version = "0.2.1"
 description = "Lightweight workbench for cross-architecture mechanistic interpretability experiments on small models"
 authors = [{name = "Juan Cruz Dovzak"}]
 requires-python = ">=3.10"

@@ -22,7 +22,7 @@ def test_imports():
     import polylens
     from polylens import (probes, sae, neurons, attribute, backends,
                             circuits, transfer, bench, lens, diff)
-    assert polylens.__version__ == "0.2.0"
+    assert polylens.__version__ == "0.2.1"
 
 
 def test_diff_dataclasses():
