@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Cloned source repos (reference only, not part of this package)
+_sources/
+
+# Generated research outputs (not for git tracking)
+_research/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
