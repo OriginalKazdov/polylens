@@ -162,25 +162,27 @@ polylens bench state-spaces/mamba-130m-hf --arch mamba
 
 ---
 
-## Findings — running polylens on small models
+## Findings — running polylens on a mini-zoo of 7 small models
 
-Selected observations from `bench.benchmark()` across model families. Full table + JSON in `_research/mini_zoo_leaderboard.json`.
+Each model profiled with `bench.benchmark()` (probes + circuits + dense vs rank-1 SAE). Full JSON in `_research/mini_zoo_leaderboard.json`. ~10 min total compute on CPU.
 
-| Model | Arch | Params | Induction (× chance) | Rank-1 SAE vs dense |
-|---|---|---|---|---|
-| Pythia-160m | transformer | 162M | 490× | dense better |
-| Pythia-410m | transformer | 405M | 3261× | dense better |
-| GPT-2 | transformer | 124M | 6393× | rank-1 ~10× better |
-| Mamba-130m | SSM | 130M | 6378× | rank-1 better |
-| Mamba-370m | SSM | 370M | TBD | TBD |
-| Qwen2.5-0.5B | transformer | 500M | TBD | TBD |
-| kazdov-α | hybrid | 98M | 2700× | rank-1 dramatically wins at L6-L7 |
+| Model | Arch | Params | Induction (× chance) | SAE-dense | SAE-rank1 | SSM var |
+|---|---|---|---|---|---|---|
+| Pythia-160m | transformer | 162M | 490× | 0.019 | 0.025 | — |
+| Pythia-410m | transformer | 405M | 3,261× | 0.075 | 0.135 | — |
+| GPT-2 | transformer | 124M | 6,393× | 5.731 | **0.608** | — |
+| Mamba-130m | SSM | 129M | 6,378× | 0.048 | **0.032** | 0.54 |
+| Mamba-370m | SSM | 372M | **7,730×** | 0.022 | 0.027 | 0.73 |
+| Qwen2.5-0.5B | transformer | 494M | **17,637×** | 0.092 | 0.068 | — |
+| kazdov-α | hybrid | 98M | 2,700× | 0.043 | **0.004** | — |
 
-**Cross-architecture observations** (preliminary — full study in upcoming write-up):
+**Observations** (preliminary — observations from running the library, not formal claims):
 
-- **Induction-like behavior may not require attention heads.** Mamba — which has no attention mechanism — shows high induction-test scores comparable to or above similarly-sized Transformers. Worth confirming with larger N.
-- **Naive logit lens appears poorly calibrated on Mamba.** Pythia logit-lens cleanly surfaces target tokens with depth (rank 5117 → 77 in 12 layers on "capital of France"). Mamba logit-lens degrades with depth (rank 197 → 1049). Mamba's intermediate residuals don't seem to live in vocab-aligned space — tuned-lens is motivated for SSMs.
-- **Rank-1 vs dense SAE preference is layer- and architecture-dependent**, not a clean global property. GPT-2 strongly prefers rank-1 (~10× lower recon); Pythia prefers dense; kazdov shows extreme local rank-1 wins at specific layers.
+- **Induction-like behavior shows up strongly in non-attention architectures.** Mamba — which has no attention mechanism — scores 6378-7730× chance on a synthetic induction-copy test, comparable to or above similarly-sized Transformers. The test itself is behavioral (output-based), so it doesn't presume any particular implementation mechanism. Worth investigating *what* SSMs use to implement this behavior.
+- **Naive logit lens appears poorly calibrated on Mamba.** Applying Pythia's `lm_head` to intermediate residuals surfaces target tokens with depth (Pythia rank 5117 → 77 across 12 layers on "capital of France is _Paris_"). The same procedure on Mamba *degrades* the target with depth (rank 197 → 1049). Mamba's intermediate residuals don't seem to live in vocab-aligned space — `TunedLens.fit()` is motivated for SSMs.
+- **Rank-1 vs dense SAE preference splits by architecture family.** GPT-2, both Mambas, and kazdov-α all reconstruct better with rank-1 factored SAEs at the tested mid-layer. Both Pythias prefer dense. Qwen is marginal. The pattern is suggestive but not yet conclusive — needs layer sweeps + multiple seeds.
+- **Modern transformer training boosts induction strongly.** Qwen2.5-0.5B shows 17,637× induction — 5.4× higher than Pythia-410m at similar size. Likely reflects data curation + training stability improvements since Pythia (2023).
+- **Mamba's SSM-state utilization scales with size.** Variance ratio across diverse inputs: 0.54 (130m) → 0.73 (370m). Larger Mamba models encode more input-specific information in their recurrent state.
 
 These aren't published results — they're observations from running the library. We'd happily be corrected if anyone finds methodological issues.
 
