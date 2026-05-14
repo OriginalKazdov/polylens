@@ -3,7 +3,7 @@
 This is the practical question every fine-tuner asks:
   "I fine-tuned X on my data. What did it change in the model's brain?"
 
-Given (base_model, fine_tuned_model) with the same architecture, polylens.diff
+Given (base_model, fine_tuned_model) with the same architecture, archscope.diff
 returns a structured ModelDiff with:
 - Per-layer activation drift (how much each layer's residual stream moved)
 - Top-K shifted neurons per layer
@@ -15,7 +15,7 @@ Requirements:
 - A small calibration_texts list (16-100 short texts) to measure drift on
 
 Usage:
-    from polylens.diff import compare
+    from archscope.diff import compare
     result = compare(base, finetuned, tokenizer, calibration_texts, backend_hint="transformer")
     print(result.to_markdown())
 """

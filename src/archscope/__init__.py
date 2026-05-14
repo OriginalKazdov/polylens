@@ -1,4 +1,4 @@
-"""polylens: unified mech interp toolkit across small + RNN + transformer.
+"""archscope: unified mech interp toolkit across small + RNN + transformer.
 
 Four core methods unified under a single API:
 - probes: linear/MLP probes over hidden states (Drop the Act inspired)
@@ -14,7 +14,7 @@ Each method exposes the same architecture-agnostic API:
 Designed for cross-architecture comparison: transformer, Mamba/SSM, custom RNN.
 """
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens, diff
 

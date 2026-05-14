@@ -11,10 +11,10 @@ import os
 
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
 
-from polylens import circuits
-from polylens.kazdov_backend import load_kazdov_checkpoint
+from archscope import circuits
+from archscope.kazdov_backend import load_kazdov_checkpoint
 
 
 CHECKPOINT_KAZDOV = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"
@@ -97,7 +97,7 @@ def main():
     print("  • concentration relative ≈ 0 → highly confident predictions (concentrated)")
 
     # Save
-    out_path = "/Users/kazdov/code/OriginalKazdov/polylens/_research/circuits_3arch.json"
+    out_path = "/Users/kazdov/code/OriginalKazdov/archscope/_research/circuits_3arch.json"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)

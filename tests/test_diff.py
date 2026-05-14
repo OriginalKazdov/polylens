@@ -11,9 +11,9 @@ import time
 import copy
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
 
-from polylens import diff
+from archscope import diff
 
 
 def main():

@@ -1,4 +1,4 @@
-"""Command-line interface for polylens."""
+"""Command-line interface for archscope."""
 from __future__ import annotations
 
 import json
@@ -15,13 +15,13 @@ console = Console()
 
 @click.group()
 def cli() -> None:
-    """polylens — cross-architecture mechanistic interpretability toolkit."""
+    """archscope — cross-architecture mechanistic interpretability toolkit."""
 
 
 @cli.command()
 def info() -> None:
     """Show available methods + supported backends."""
-    methods = Table(title=f"polylens v{__version__}")
+    methods = Table(title=f"archscope v{__version__}")
     methods.add_column("Method")
     methods.add_column("Module")
     methods.add_column("Source paper")
@@ -61,14 +61,14 @@ def info() -> None:
               help="Output file. Format inferred from extension: .json or .md. "
                    "Without --out, prints markdown to stdout.")
 def bench(model_name: str, arch: str, out: str | None) -> None:
-    """Run polylens InterpBench on a HuggingFace model.
+    """Run archscope InterpBench on a HuggingFace model.
 
     Examples:
-      polylens bench EleutherAI/pythia-160m --arch transformer
-      polylens bench EleutherAI/pythia-160m --arch transformer --out pythia.md
-      polylens bench state-spaces/mamba-130m-hf --arch mamba --out mamba.json
+      archscope bench EleutherAI/pythia-160m --arch transformer
+      archscope bench EleutherAI/pythia-160m --arch transformer --out pythia.md
+      archscope bench state-spaces/mamba-130m-hf --arch mamba --out mamba.json
     """
-    # Lazy imports keep `polylens info` fast (no torch/transformers).
+    # Lazy imports keep `archscope info` fast (no torch/transformers).
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 

@@ -19,15 +19,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 def test_imports():
     """All modules import without errors."""
-    import polylens
-    from polylens import (probes, sae, neurons, attribute, backends,
+    import archscope
+    from archscope import (probes, sae, neurons, attribute, backends,
                             circuits, transfer, bench, lens, diff)
-    assert polylens.__version__ == "0.2.1"
+    assert archscope.__version__ == "0.2.2"
 
 
 def test_diff_dataclasses():
     """ModelDiff dataclasses instantiate + markdown renders."""
-    from polylens.diff import ModelDiff, LayerDrift, CircuitDelta
+    from archscope.diff import ModelDiff, LayerDrift, CircuitDelta
     md = ModelDiff(arch_family="transformer", n_layers=2, n_calibration_texts=4)
     md.layer_drift.append(LayerDrift(layer=0, layer_name="layer_0.residual",
                                        mean_l2_delta=0.5, relative_drift=0.05,
@@ -42,7 +42,7 @@ def test_diff_dataclasses():
 
 def test_lens_dataclasses():
     """LensResult and LayerPrediction instantiate and serialize."""
-    from polylens.lens import LensResult, LayerPrediction
+    from archscope.lens import LensResult, LayerPrediction
     lp = LayerPrediction(layer=0, layer_name="layer_0.residual",
                          top_tokens=[(1, "a", 0.5)], target_prob=0.1,
                          target_rank=10, entropy=2.0)
@@ -53,7 +53,7 @@ def test_lens_dataclasses():
 
 def test_sae_dense_synthetic():
     """Dense SAE trains and produces finite recon."""
-    from polylens import sae
+    from archscope import sae
     fake = torch.randn(100, 64)
     cfg = sae.SAEConfig(input_dim=64, n_features=128, sae_type="dense")
     trained = sae.fit_sae(fake, cfg, epochs=5)
@@ -63,7 +63,7 @@ def test_sae_dense_synthetic():
 
 def test_sae_rank1_synthetic():
     """Rank-1 factored SAE trains and produces finite recon."""
-    from polylens import sae
+    from archscope import sae
     fake = torch.randn(100, 64)
     cfg = sae.SAEConfig(input_dim=64, n_features=128, sae_type="rank1")
     trained = sae.fit_sae(fake, cfg, epochs=5)
@@ -72,31 +72,31 @@ def test_sae_rank1_synthetic():
 
 def test_sae_invalid_type():
     """Unknown SAE type raises."""
-    from polylens import sae
+    from archscope import sae
     with pytest.raises(ValueError):
         sae.build_sae(sae.SAEConfig(input_dim=8, n_features=16, sae_type="nonsense"))
 
 
 def test_backend_registry():
     """Backends are registered and discoverable."""
-    from polylens.backends import Backend
+    from archscope.backends import Backend
     for name in ("transformer", "mamba", "recurrent"):
         assert name in Backend._registry, f"{name} not registered"
 
 
 def test_kazdov_backend_registers_when_available():
     """KazdovBackend optional import succeeds."""
-    from polylens.backends import Backend
+    from archscope.backends import Backend
     # kazdov_backend imports at __init__ and registers — it's optional
     if "kazdov" in Backend._registry:
         # If kazdov repo is importable, backend should be there
-        from polylens.kazdov_backend import KazdovBackend
+        from archscope.kazdov_backend import KazdovBackend
         assert KazdovBackend is Backend._registry["kazdov"]
 
 
 def test_alignment_math():
     """Alignment learning produces a matrix that reconstructs source from target."""
-    from polylens.transfer import learn_alignment
+    from archscope.transfer import learn_alignment
     torch.manual_seed(0)
     n = 50
     d_src, d_tgt = 16, 12
@@ -112,7 +112,7 @@ def test_alignment_math():
 
 def test_probe_fits_synthetic():
     """ProbeFit trains a probe on linearly separable synthetic data."""
-    from polylens.probes import ProbeFit, ProbeConfig
+    from archscope.probes import ProbeFit, ProbeConfig
     torch.manual_seed(0)
     # Strongly separable: class 1 around +2, class 0 around -2, in 8 dims
     pos = torch.randn(80, 8) + 2.0
@@ -128,7 +128,7 @@ def test_probe_fits_synthetic():
 
 def test_circuit_score_dataclass():
     """CircuitScore dataclass instantiates and serializes."""
-    from polylens.circuits import CircuitScore
+    from archscope.circuits import CircuitScore
     s = CircuitScore(name="test", score=1.0, baseline=0.5, relative=2.0, raw={"x": 1})
     assert s.score == 1.0
     assert s.raw["x"] == 1
@@ -138,7 +138,7 @@ def test_interpprofile_serializes():
     """InterpProfile is dataclass and JSON-serializable."""
     from dataclasses import asdict
     import json
-    from polylens.bench import InterpProfile
+    from archscope.bench import InterpProfile
     p = InterpProfile(model_name="test", arch_family="transformer", n_params=1000,
                       n_layers=2, hidden_dim=16)
     j = json.dumps(asdict(p), default=str)

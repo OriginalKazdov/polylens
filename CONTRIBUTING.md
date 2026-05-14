@@ -1,15 +1,15 @@
-# Contributing to polylens
+# Contributing to archscope
 
 Thanks for considering a contribution. Brief guidelines.
 
 ## Scope of this library
 
-`polylens` is intentionally focused on:
+`archscope` is intentionally focused on:
 - **Small models** (typically <2B params, runnable on CPU/laptop GPU)
 - **Cross-architecture support** (transformer + SSM + hybrid + custom)
 - **Mechanistic interpretability primitives** wrapped under a unified API
 
-We are not trying to compete with `transformer_lens` or `nnsight` — those are broader and more mature tools. `polylens` focuses on lightweight, reproducible experiments for small or non-standard architectures where a consistent API across model families is useful.
+We are not trying to compete with `transformer_lens` or `nnsight` — those are broader and more mature tools. `archscope` focuses on lightweight, reproducible experiments for small or non-standard architectures where a consistent API across model families is useful.
 
 ## What we welcome
 
@@ -47,7 +47,7 @@ class MyArchBackend(Backend):
         ...
 ```
 
-See `src/polylens/backends.py` (TransformerBackend, MambaBackend) and `src/polylens/kazdov_backend.py` for examples.
+See `src/archscope/backends.py` (TransformerBackend, MambaBackend) and `src/archscope/kazdov_backend.py` for examples.
 
 ## Running tests
 
@@ -66,7 +66,7 @@ python tests/run_interpbench_leaderboard.py
 
 ## Filing issues
 
-- Bug? Include: minimum reproducer, model name, polylens version, transformers version, Python version, full traceback.
+- Bug? Include: minimum reproducer, model name, archscope version, transformers version, Python version, full traceback.
 - Feature request? Reference the paper or motivation. We prefer techniques with published validation.
 
 ## Code of conduct

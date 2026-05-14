@@ -13,10 +13,10 @@ import sys
 import time
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
 
-from polylens import probes, sae, neurons, attribute
-from polylens.backends import Backend
+from archscope import probes, sae, neurons, attribute
+from archscope.backends import Backend
 
 
 MODEL_NAME = "EleutherAI/pythia-160m"

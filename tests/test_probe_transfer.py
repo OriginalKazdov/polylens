@@ -14,11 +14,11 @@ import sys
 import time
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
 
-from polylens import transfer
-from polylens.backends import Backend
-from polylens.kazdov_backend import load_kazdov_checkpoint
+from archscope import transfer
+from archscope.backends import Backend
+from archscope.kazdov_backend import load_kazdov_checkpoint
 
 
 CHECKPOINT_KAZDOV = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"

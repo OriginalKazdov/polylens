@@ -1,6 +1,6 @@
 [project]
-name = "polylens"
-version = "0.2.1"
+name = "archscope"
+version = "0.2.2"
 description = "Lightweight workbench for cross-architecture mechanistic interpretability experiments on small models"
 readme = "README.md"
 authors = [{name = "Juan Cruz Dovzak"}]
@@ -35,7 +35,7 @@ mamba = ["mamba-ssm>=1.2"]
 dev = ["pytest>=8.0", "ruff>=0.4.0"]
 
 [project.scripts]
-polylens = "polylens.cli:cli"
+archscope = "archscope.cli:cli"
 
 [build-system]
 requires = ["setuptools>=68.0"]

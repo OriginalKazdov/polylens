@@ -1,14 +1,14 @@
-# polylens
+# archscope
 
 **Mechanistic interpretability experiments across architectures — Transformers, SSMs/Mamba, recurrent models, and hybrids.**
 
-[![CI](https://github.com/OriginalKazdov/polylens/actions/workflows/ci.yml/badge.svg)](https://github.com/OriginalKazdov/polylens/actions/workflows/ci.yml)
+[![CI](https://github.com/OriginalKazdov/archscope/actions/workflows/ci.yml/badge.svg)](https://github.com/OriginalKazdov/archscope/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-## What polylens is
+## What archscope is
 
-`polylens` is a **small-model interpretability workbench**. It's designed for quick, reproducible experiments across model families — not for large-scale SAE training, production model auditing, or replacing mature Transformer-specific tools.
+`archscope` is a **small-model interpretability workbench**. It's designed for quick, reproducible experiments across model families — not for large-scale SAE training, production model auditing, or replacing mature Transformer-specific tools.
 
 Use it when you want to ask:
 - *Can I extract comparable activations from different architectures?*
@@ -20,7 +20,7 @@ Use it when you want to ask:
 It is **not**: a competitor to `transformer_lens` or `nnsight` (both are broader and more mature), a production audit tool, or a SaaS. It's a small, hackable workbench.
 
 ```python
-import polylens as mi
+import archscope as mi
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 tok   = AutoTokenizer.from_pretrained("state-spaces/mamba-130m-hf")
@@ -71,10 +71,10 @@ ssm = backend.extract(tok("text", return_tensors="pt"), layers=["layer_12.ssm_st
 ## Install
 
 ```bash
-pip install polylens   # once on PyPI
+pip install archscope   # once on PyPI
 # or:
-git clone https://github.com/OriginalKazdov/polylens.git
-cd polylens && pip install -e .
+git clone https://github.com/OriginalKazdov/archscope.git
+cd archscope && pip install -e .
 ```
 
 For Mamba on CPU you don't need `mamba-ssm` — HF's slow path works. On CUDA install `mamba-ssm` for the fast path.
@@ -86,7 +86,7 @@ For Mamba on CPU you don't need `mamba-ssm` — HF's slow path works. On CUDA in
 ### Train a probe on any architecture
 
 ```python
-import polylens as mi
+import archscope as mi
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-160m")
@@ -132,7 +132,7 @@ tl.predict(model, tok, "...", backend_hint="transformer")
 ### Model Diff — what did fine-tuning change?
 
 ```python
-from polylens.diff import compare
+from archscope.diff import compare
 
 result = compare(
     base_model, fine_tuned_model, tokenizer,
@@ -164,14 +164,14 @@ print(mi.bench.profile_to_markdown(profile))
 
 CLI:
 ```bash
-polylens info
-polylens bench EleutherAI/pythia-160m --arch transformer --out pythia.json
-polylens bench state-spaces/mamba-130m-hf --arch mamba
+archscope info
+archscope bench EleutherAI/pythia-160m --arch transformer --out pythia.json
+archscope bench state-spaces/mamba-130m-hf --arch mamba
 ```
 
 ---
 
-## Findings — running polylens on a mini-zoo of 7 small models
+## Findings — running archscope on a mini-zoo of 7 small models
 
 Each model profiled with `bench.benchmark()` (probes + circuits + dense vs rank-1 SAE). ~10 min total compute on CPU.
 
@@ -217,7 +217,7 @@ These aren't published findings — they're observations from a single mini-zoo 
 
 ## Honest limits
 
-`polylens` is a v0.2 release. What it does well: cross-architecture mech-interp primitives, unified API, real observable findings, validated on multiple architectures. What it doesn't do yet:
+`archscope` is a v0.2 release. What it does well: cross-architecture mech-interp primitives, unified API, real observable findings, validated on multiple architectures. What it doesn't do yet:
 
 - No causal scrubbing (gold-standard circuit verification)
 - No interactive notebook viz (matplotlib helpers are TBD)
@@ -228,18 +228,18 @@ These aren't published findings — they're observations from a single mini-zoo 
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for what we welcome (new backends, new circuit detectors, viz helpers).
 
-For mature Transformer-centric workflows, prefer [`transformer_lens`](https://github.com/TransformerLensOrg/TransformerLens) or [`nnsight`](https://nnsight.net/). They are broader and more mature; `polylens` focuses on lightweight cross-architecture experiments and small / non-standard model workflows.
+For mature Transformer-centric workflows, prefer [`transformer_lens`](https://github.com/TransformerLensOrg/TransformerLens) or [`nnsight`](https://nnsight.net/). They are broader and more mature; `archscope` focuses on lightweight cross-architecture experiments and small / non-standard model workflows.
 
 ---
 
 ## Citation
 
 ```bibtex
-@misc{dovzak2026polylens,
-  title  = {polylens: Cross-architecture mechanistic interpretability experiments},
+@misc{dovzak2026archscope,
+  title  = {archscope: Cross-architecture mechanistic interpretability experiments},
   author = {Juan Cruz Dovzak},
   year   = {2026},
-  url    = {https://github.com/OriginalKazdov/polylens}
+  url    = {https://github.com/OriginalKazdov/archscope}
 }
 ```
 

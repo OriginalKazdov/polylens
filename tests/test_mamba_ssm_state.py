@@ -11,10 +11,10 @@ import sys
 import time
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
 
-from polylens import sae
-from polylens.backends import Backend
+from archscope import sae
+from archscope.backends import Backend
 
 
 def tokenize(tok, texts):
