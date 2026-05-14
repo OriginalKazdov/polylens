@@ -110,28 +110,72 @@ class ProbeFit:
 
 
 def _auroc(logits: torch.Tensor, labels: torch.Tensor) -> float:
-    """Simple AUROC from logits + binary labels."""
+    """AUROC from logits + binary labels.
+
+    Returns 0.5 (chance) when only one class is present in `labels`
+    (the typical small-split case) — this is more informative than NaN
+    and avoids sklearn's UndefinedMetricWarning leaking to user code.
+    """
+    import warnings
     from sklearn.metrics import roc_auc_score
     scores = torch.sigmoid(logits).cpu().numpy()
     y = labels.cpu().numpy()
-    try:
-        return float(roc_auc_score(y, scores))
-    except ValueError:
-        return float("nan")   # happens when only one class present
+    if len(set(y.tolist())) < 2:
+        warnings.warn(
+            "Only one class present in this split — AUROC undefined; "
+            "returning 0.5 (chance). Increase val_split or dataset size.",
+            stacklevel=2,
+        )
+        return 0.5
+    return float(roc_auc_score(y, scores))
 
 
 # High-level API matching paper
 
 def fit_probe(
     model,
-    inputs_pos: list,    # examples where target=1 (e.g., faithful)
-    inputs_neg: list,    # examples where target=0 (e.g., reasoning theater)
-    layer_name: str,
+    inputs_pos=None,
+    inputs_neg=None,
+    layer_name: str = "",
     backend_hint: str | None = None,
     config: ProbeConfig | None = None,
     device: str = "cpu",
+    *,
+    tokenizer=None,
+    pos_texts: list[str] | None = None,
+    neg_texts: list[str] | None = None,
+    max_length: int = 32,
 ) -> ProbeFit:
-    """End-to-end: extract activations from model, fit probe."""
+    """End-to-end: extract activations from a model and fit a probe.
+
+    Two calling conventions:
+
+    1. **Pre-tokenized**: pass ``inputs_pos`` and ``inputs_neg`` as already-tokenized
+       dicts (with ``input_ids``, optional ``attention_mask``).
+
+    2. **Texts + tokenizer**: pass ``tokenizer=…``, ``pos_texts=[…]``, ``neg_texts=[…]``
+       and archscope tokenizes for you. The kazdov backend requires a bool
+       attention_mask; we auto-handle that.
+
+    Returns:
+        A ``ProbeFit`` with trained probe and ``.metrics`` (train/val AUROC, loss).
+    """
+    if pos_texts is not None or neg_texts is not None:
+        if tokenizer is None:
+            raise ValueError("pos_texts/neg_texts require a tokenizer= argument")
+        if pos_texts is None or neg_texts is None:
+            raise ValueError("provide both pos_texts and neg_texts")
+        from .loader import make_tokenize_fn
+        tk = make_tokenize_fn(
+            tokenizer, max_length=max_length,
+            attention_mask_bool=(backend_hint == "kazdov"),
+        )
+        inputs_pos = tk(pos_texts)
+        inputs_neg = tk(neg_texts)
+    elif inputs_pos is None or inputs_neg is None:
+        raise ValueError("provide either (inputs_pos, inputs_neg) or "
+                          "(tokenizer, pos_texts, neg_texts)")
+
     backend = Backend.for_model(model, hint=backend_hint)
     config = config or ProbeConfig(layer_name=layer_name)
 

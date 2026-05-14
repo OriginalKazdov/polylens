@@ -22,7 +22,56 @@ def test_imports():
     import archscope
     from archscope import (probes, sae, neurons, attribute, backends,
                             circuits, transfer, bench, lens, diff)
-    assert archscope.__version__ == "0.2.2"
+    assert archscope.__version__ == "0.2.3"
+
+
+def test_loader_exports():
+    """load_model and make_tokenize_fn are exported at top level."""
+    import archscope
+    assert hasattr(archscope, "load_model")
+    assert hasattr(archscope, "make_tokenize_fn")
+    assert callable(archscope.load_model)
+    assert callable(archscope.make_tokenize_fn)
+
+
+def test_layer_name_validation_clear_error():
+    """Backend validates layer names with an informative error."""
+    from archscope.backends import Backend, ActivationRecord
+
+    # Build a minimal mock backend
+    class _MockBackend(Backend):
+        def layer_names(self): return ["layer_0.residual", "layer_1.residual"]
+        def extract(self, inputs, layers=None):
+            layers = layers or self.layer_names()
+            self._validate_layers(layers)
+            return []
+        def hidden_dim(self, layer_name): return 8
+
+    b = _MockBackend(model=None)
+    # Valid layer → no error
+    b.extract({}, layers=["layer_0.residual"])
+    # Invalid layer → clear error message
+    try:
+        b.extract({}, layers=["layer_99.residual"])
+    except ValueError as e:
+        assert "Unknown layer name" in str(e)
+        assert "layer_0.residual" in str(e)  # shows valid example
+        return
+    raise AssertionError("Expected ValueError for invalid layer name")
+
+
+def test_auroc_returns_chance_on_single_class():
+    """_auroc returns 0.5 instead of NaN when only one class is present."""
+    import warnings
+    import torch
+    from archscope.probes import _auroc
+
+    logits = torch.tensor([0.5, 0.2, -0.1])
+    labels = torch.tensor([1.0, 1.0, 1.0])   # only one class
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = _auroc(logits, labels)
+    assert result == 0.5
 
 
 def test_diff_dataclasses():

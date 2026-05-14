@@ -13,9 +13,13 @@ from . import __version__
 console = Console()
 
 
-@click.group()
-def cli() -> None:
-    """archscope — cross-architecture mechanistic interpretability toolkit."""
+@click.group(invoke_without_command=True)
+@click.version_option(__version__, "-V", "--version", prog_name="archscope")
+@click.pass_context
+def cli(ctx: click.Context) -> None:
+    """archscope — cross-architecture mechanistic interpretability workbench."""
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
 
 
 @cli.command()

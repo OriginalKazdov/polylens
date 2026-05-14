@@ -77,6 +77,21 @@ class Backend(abc.ABC):
         """Dimensionality of activations at a given layer."""
         ...
 
+    def _validate_layers(self, layers: list[str]) -> None:
+        """Raise a clear error if any requested layer name isn't valid."""
+        valid = set(self.layer_names())
+        bad = [ln for ln in layers if ln not in valid]
+        if bad:
+            # Show first few valid examples so users see the format.
+            sample = ", ".join(self.layer_names()[:3])
+            n_total = len(valid)
+            raise ValueError(
+                f"Unknown layer name(s) for {type(self).__name__}: {bad}. "
+                f"Valid layer names look like: {sample}{', ...' if n_total > 3 else ''} "
+                f"(total: {n_total} layer names). Call `backend.layer_names()` "
+                f"to see all valid options."
+            )
+
 
 @Backend.register("transformer")
 class TransformerBackend(Backend):
@@ -89,6 +104,7 @@ class TransformerBackend(Backend):
 
     def extract(self, inputs, layers=None):
         layers = layers or self.layer_names()
+        self._validate_layers(layers)
         # Use HF's output_hidden_states=True for clean extraction.
         # Wrap in no_grad: extraction shouldn't build a backward graph.
         with torch.no_grad():
@@ -134,6 +150,7 @@ class MambaBackend(Backend):
 
     def extract(self, inputs, layers=None):
         layers = layers or self.layer_names()
+        self._validate_layers(layers)
 
         need_residual = any(".residual" in ln for ln in layers)
         need_ssm = any(".ssm_state" in ln for ln in layers)

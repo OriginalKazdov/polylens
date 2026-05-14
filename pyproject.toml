@@ -1,6 +1,6 @@
 [project]
 name = "archscope"
-version = "0.2.2"
+version = "0.2.3"
 description = "Lightweight workbench for cross-architecture mechanistic interpretability experiments on small models"
 readme = "README.md"
 authors = [{name = "Juan Cruz Dovzak"}]
@@ -43,3 +43,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"archscope" = ["py.typed"]

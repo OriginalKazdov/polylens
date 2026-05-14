@@ -95,6 +95,7 @@ class KazdovBackend(Backend):
 
     def extract(self, inputs, layers=None):
         layers = layers or self.layer_names()
+        self._validate_layers(layers)
         captures: dict[str, torch.Tensor] = {}
 
         # Register a forward hook on each requested block.

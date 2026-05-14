@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.2.3 — 2026-05-14
+
+Engineering pass focused on developer experience. No new methods; existing
+APIs got smoother + clearer error paths.
+
+### New
+- **`archscope.load_model(name, arch=...)`** — one-call HuggingFace
+  model + tokenizer + backend loader. Eliminates ~5 lines of boilerplate
+  per example.
+- **`archscope.make_tokenize_fn(tokenizer, ...)`** — public helper for
+  building a tokenize function (handles kazdov's bool attention_mask).
+- **`probes.fit_probe` now accepts `tokenizer + pos_texts + neg_texts`**
+  in addition to the pre-tokenized form. Pick whichever fits your code.
+- **`archscope --version` / `-V`** — standard CLI version flag.
+- **`py.typed` marker** — IDEs now pick up archscope's type hints
+  natively.
+
+### Better errors
+- `Backend.extract([..., "layer_999.residual"])` now raises a clear
+  `ValueError` listing valid layer names. Was: cryptic IndexError.
+- `_auroc()` returns `0.5` with a single `UserWarning` when only one
+  class is present in a probe split, instead of `NaN` + sklearn's
+  `UndefinedMetricWarning`.
+
+### Tests
+- 15/15 unit tests pass (was 12). New tests: `test_loader_exports`,
+  `test_layer_name_validation_clear_error`, `test_auroc_returns_chance_on_single_class`.
+
 ## v0.2.2 — 2026-05-14
 
 **Renamed: `polylens` → `archscope`.**
