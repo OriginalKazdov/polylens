@@ -17,7 +17,7 @@ Use it when you want to ask:
 - *Did a fine-tuned model drift in specific layers?*
 - *Do dense or rank-1 SAEs reconstruct this model family better at this layer?*
 
-It is **not**: a competitor to `transformer_lens` or `nnsight` (both are broader and more mature), a production audit tool, or a SaaS. It's a small, hackable toolkit.
+It is **not**: a competitor to `transformer_lens` or `nnsight` (both are broader and more mature), a production audit tool, or a SaaS. It's a small, hackable workbench.
 
 ```python
 import polylens as mi
@@ -35,7 +35,7 @@ ssm = backend.extract(tok("text", return_tensors="pt"), layers=["layer_12.ssm_st
 
 ---
 
-## What's inside (v0.2.0)
+## What's inside
 
 ### Core mech-interp methods
 
@@ -198,9 +198,9 @@ Skip specific models with `--skip Mamba-370m` if memory-tight. Kazdov-α is incl
 **Open questions raised by this run** (single-seed observations, not formal claims):
 
 - **Does induction-like behavior require attention heads?** Mamba — which has no attention mechanism — scores 6378-7730× chance on our behavioral induction test, comparable to or above similarly-sized Transformers. The test is behavioral (output-based), so it doesn't presume any specific mechanism. What in SSMs implements this behavior?
-- **Why does naive logit lens degrade with depth on Mamba?** Applying Pythia's `lm_head` to intermediate residuals surfaces the target with depth on Pythia (target rank 5117 → 77 across 12 layers on "capital of France is _Paris_"). The same procedure on Mamba moves the target *away* from top-1 (rank 197 → 1049 across 24 layers). Does this hold across more SSM checkpoints? Is tuned-lens enough to fix it?
+- **Why does naive logit lens degrade with depth on Mamba?** Applying each model's own `lm_head` to its intermediate residuals surfaces the target with depth on Pythia (target rank 5117 → 77 across 12 layers on "capital of France is _Paris_"). The same procedure on Mamba moves the target *away* from top-1 (rank 197 → 1049 across 24 layers). Does this hold across more SSM checkpoints? Is tuned-lens enough to fix it?
 - **Is rank-1 SAE preference architecture-driven or layer-driven?** In this run, GPT-2, both Mambas, and kazdov-α reconstructed better with rank-1 factored SAEs at the tested mid-layer; both Pythias preferred dense; Qwen was marginal. Suggestive but needs layer sweeps + multiple seeds before claiming a pattern.
-- **Does modern transformer training really shift circuit emergence?** Qwen2.5-0.5B shows 17,637× induction — 5.4× higher than Pythia-410m at similar size. Plausibly attributable to data curation + training stability since 2023, but we haven't isolated the cause.
+- **How much do training recipe, tokenizer, and data affect induction-like behavior?** Qwen2.5-0.5B shows 17,637× induction — 5.4× higher than Pythia-410m at similar size. Plausibly attributable to data curation + training stability since 2023, but we haven't isolated the cause.
 - **Does Mamba's SSM-state utilization scale with model size?** In this run, the input-dependent variance ratio rose 0.54 (Mamba-130m) → 0.73 (Mamba-370m). Does this trend hold across more checkpoints?
 
 These aren't published findings — they're observations from a single mini-zoo run. Methodological corrections welcome.
@@ -228,7 +228,7 @@ These aren't published findings — they're observations from a single mini-zoo 
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for what we welcome (new backends, new circuit detectors, viz helpers).
 
-For mature transformer-only work prefer [`transformer_lens`](https://github.com/TransformerLensOrg/TransformerLens) (much broader feature surface) or [`nnsight`](https://nnsight.net/) (modern PyTorch tracing). They overlap with us on the transformer side; we focus where they're lighter.
+For mature Transformer-centric workflows, prefer [`transformer_lens`](https://github.com/TransformerLensOrg/TransformerLens) or [`nnsight`](https://nnsight.net/). They are broader and more mature; `polylens` focuses on lightweight cross-architecture experiments and small / non-standard model workflows.
 
 ---
 
