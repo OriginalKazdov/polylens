@@ -1,4 +1,4 @@
-"""End-to-end test: apply mechinterp-small to Mamba 130m (true SSM).
+"""End-to-end test: apply polylens to Mamba 130m (true SSM).
 
 This is the third arch family for the cross-architecture paper:
 - Pythia (standard transformer)         — done
@@ -10,10 +10,10 @@ import sys
 import time
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/mechinterp-small/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
 
-from mechinterp_small import probes, sae, neurons
-from mechinterp_small.backends import Backend
+from polylens import probes, sae, neurons
+from polylens.backends import Backend
 
 
 MAMBA_NAME = "state-spaces/mamba-130m-hf"

@@ -1,4 +1,4 @@
-"""End-to-end test: apply mechinterp-small to kazdov-α (hybrid attention).
+"""End-to-end test: apply polylens to kazdov-α (hybrid attention).
 
 Validates that the same 4 methods that worked on Pythia also work on
 kazdov-α's hybrid MoBE-BCN+MHA architecture. This is the core cross-arch
@@ -9,11 +9,11 @@ import sys
 import time
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/mechinterp-small/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
 
-from mechinterp_small import probes, sae, neurons
-from mechinterp_small.backends import Backend
-from mechinterp_small.kazdov_backend import load_kazdov_checkpoint
+from polylens import probes, sae, neurons
+from polylens.backends import Backend
+from polylens.kazdov_backend import load_kazdov_checkpoint
 
 
 CHECKPOINT = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"

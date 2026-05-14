@@ -1,4 +1,4 @@
-"""mechinterp-small: unified mech interp toolkit across small + RNN + transformer.
+"""polylens: unified mech interp toolkit across small + RNN + transformer.
 
 Four core methods unified under a single API:
 - probes: linear/MLP probes over hidden states (Drop the Act inspired)

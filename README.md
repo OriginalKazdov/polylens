@@ -1,11 +1,11 @@
-# mechinterp-small
+# polylens
 
 **Unified mechanistic interpretability toolkit for small models across architectures — transformers, hybrid attention, and state-space models (Mamba).**
 
-Existing mech interp libraries (`transformer_lens`, `nnsight`, `sae_lens`) are transformer-only. `mechinterp-small` works across architectures with a single API, including **the first open-source Mamba SSM state extraction**.
+Existing mech interp libraries (`transformer_lens`, `nnsight`, `sae_lens`) are transformer-only. `polylens` works across architectures with a single API, including **the first open-source Mamba SSM state extraction**.
 
 ```python
-import mechinterp_small as mi
+import polylens as mi
 from transformers import AutoModelForCausalLM
 
 model = AutoModelForCausalLM.from_pretrained("state-spaces/mamba-130m-hf")
@@ -18,7 +18,7 @@ records = backend.extract(inputs, layers=["layer_12.ssm_state"])
 
 ## Why this exists
 
-Mech interp tools assume transformer architecture. As Mamba and hybrid models proliferate, this gap matters: **we can't compare what we can't probe**. `mechinterp-small` is the library that probes them all.
+Mech interp tools assume transformer architecture. As Mamba and hybrid models proliferate, this gap matters: **we can't compare what we can't probe**. `polylens` is the library that probes them all.
 
 ## Features
 
@@ -41,7 +41,7 @@ Mech interp tools assume transformer architecture. As Mamba and hybrid models pr
 ## Install
 
 ```bash
-pip install mechinterp-small
+pip install polylens
 ```
 
 For Mamba support, you don't need `mamba-ssm` (we use HuggingFace's slow path which works on CPU).
@@ -51,7 +51,7 @@ For Mamba support, you don't need `mamba-ssm` (we use HuggingFace's slow path wh
 ### Train a probe on any architecture
 
 ```python
-import mechinterp_small as mi
+import polylens as mi
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-160m")
@@ -98,8 +98,8 @@ print(mi.bench.profile_to_markdown(profile))
 
 CLI:
 ```bash
-mechinterp bench EleutherAI/pythia-160m --arch transformer --out pythia.json
-mechinterp bench state-spaces/mamba-130m-hf --arch mamba
+polylens bench EleutherAI/pythia-160m --arch transformer --out pythia.json
+polylens bench state-spaces/mamba-130m-hf --arch mamba
 ```
 
 ### Detect circuits across architectures
@@ -114,7 +114,7 @@ print(scores["early_token_concentration"].relative)
 ### Cross-architecture probe transfer
 
 ```python
-from mechinterp_small.transfer import evaluate_transfer
+from polylens.transfer import evaluate_transfer
 
 result = evaluate_transfer(
     source_model=pythia,  target_model=mamba,
@@ -154,11 +154,11 @@ print(f"Transfer AUROC: {result.transfer_auroc} (drop: {result.transfer_drop:+.3
 
 If you use this library or its benchmark, please cite:
 ```
-@misc{dovzak2026mechinterpsmall,
-  title  = {mechinterp-small: A cross-architecture mechanistic interpretability toolkit},
+@misc{dovzak2026polylens,
+  title  = {polylens: A cross-architecture mechanistic interpretability toolkit},
   author = {Juan Cruz Dovzak},
   year   = {2026},
-  url    = {https://github.com/kazdov/mechinterp-small}
+  url    = {https://github.com/kazdov/polylens}
 }
 ```
 

@@ -1,10 +1,10 @@
-# Contributing to mechinterp-small
+# Contributing to polylens
 
 Thanks for considering a contribution. Brief guidelines.
 
 ## Scope of this library
 
-`mechinterp-small` is intentionally focused on:
+`polylens` is intentionally focused on:
 - **Small models** (typically <2B params, runnable on CPU/laptop GPU)
 - **Cross-architecture support** (transformer + SSM + hybrid + custom)
 - **Mechanistic interpretability primitives** wrapped under a unified API
@@ -47,7 +47,7 @@ class MyArchBackend(Backend):
         ...
 ```
 
-See `src/mechinterp_small/backends.py` (TransformerBackend, MambaBackend) and `src/mechinterp_small/kazdov_backend.py` for examples.
+See `src/polylens/backends.py` (TransformerBackend, MambaBackend) and `src/polylens/kazdov_backend.py` for examples.
 
 ## Running tests
 
@@ -66,7 +66,7 @@ python tests/run_interpbench_leaderboard.py
 
 ## Filing issues
 
-- Bug? Include: minimum reproducer, model name, mechinterp-small version, transformers version, Python version, full traceback.
+- Bug? Include: minimum reproducer, model name, polylens version, transformers version, Python version, full traceback.
 - Feature request? Reference the paper or motivation. We prefer techniques with published validation.
 
 ## Code of conduct

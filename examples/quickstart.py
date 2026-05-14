@@ -1,4 +1,4 @@
-"""mechinterp-small quickstart — 4 demos in one file.
+"""polylens quickstart — 4 demos in one file.
 
 Demo 1: Probe sentiment in Pythia
 Demo 2: Detect induction circuits across 2 archs
@@ -8,7 +8,7 @@ Demo 4: Compare InterpBench profile for 2 models
 Run: python examples/quickstart.py
 """
 import torch
-import mechinterp_small as mi
+import polylens as mi
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -61,6 +61,6 @@ print(f"  SAE trained on SSM state: recon={trained.last_metrics['recon']:.4f}")
 # === Demo 4: InterpBench profile comparison ===
 print("\n=== Demo 4: InterpBench compact comparison ===")
 print("  (skip full run — see tests/run_interpbench_leaderboard.py)")
-print("  Or: `mechinterp bench EleutherAI/pythia-160m --arch transformer`")
+print("  Or: `polylens bench EleutherAI/pythia-160m --arch transformer`")
 
 print("\nDone.")

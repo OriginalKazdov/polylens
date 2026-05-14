@@ -14,11 +14,11 @@ import json
 import os
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/mechinterp-small/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
 
-from mechinterp_small import transfer
-from mechinterp_small.backends import Backend
-from mechinterp_small.kazdov_backend import load_kazdov_checkpoint
+from polylens import transfer
+from polylens.backends import Backend
+from polylens.kazdov_backend import load_kazdov_checkpoint
 
 
 CHECKPOINT_KAZDOV = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"
@@ -223,7 +223,7 @@ def main():
         print(f"{src:>10} ↔ {tgt:<10} | {a_to_b:>7.3f} | {b_to_a:>7.3f} | {asym:>10.3f}")
 
     # Save results
-    out_path = "/Users/kazdov/code/OriginalKazdov/mechinterp-small/_research/transfer_matrix_3arch.json"
+    out_path = "/Users/kazdov/code/OriginalKazdov/polylens/_research/transfer_matrix_3arch.json"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)

@@ -15,7 +15,7 @@
 ### Unique features
 - **Mamba SSM state extraction** via `layer_N.ssm_state` (first open-source impl)
 - Custom `KazdovBackend` for hybrid MoBE-BCN+MHA architectures
-- CLI: `mechinterp info`, `mechinterp bench MODEL --arch ARCH`
+- CLI: `polylens info`, `polylens bench MODEL --arch ARCH`
 
 ### Validated on
 - EleutherAI/pythia-160m (HF transformer)

@@ -1,5 +1,5 @@
 [project]
-name = "mechinterp-small"
+name = "polylens"
 version = "0.1.0"
 description = "Unified mech interp toolkit for small + recurrent + transformer models — probes, SAEs, neuron modulation across architectures"
 authors = [{name = "Juan Cruz Dovzak"}]
@@ -23,7 +23,7 @@ mamba = ["mamba-ssm>=1.2"]
 dev = ["pytest>=8.0", "ruff>=0.4.0"]
 
 [project.scripts]
-mechinterp = "mechinterp_small.cli:cli"
+polylens = "polylens.cli:cli"
 
 [build-system]
 requires = ["setuptools>=68.0"]

@@ -1,4 +1,4 @@
-"""CLI for mechinterp-small."""
+"""CLI for polylens."""
 from __future__ import annotations
 import json
 import os
@@ -12,14 +12,14 @@ console = Console()
 
 @click.group()
 def cli():
-    """mechinterp-small — unified mech interp toolkit."""
+    """polylens — unified mech interp toolkit."""
     pass
 
 
 @cli.command()
 def info():
     """Show available methods + supported backends."""
-    t = Table(title="mechinterp-small v0.1.0")
+    t = Table(title="polylens v0.1.0")
     t.add_column("Method"); t.add_column("Module"); t.add_column("Source paper")
     t.add_row("Probes", "probes.fit_probe", "Drop the Act (2605.11467)")
     t.add_row("SAE", "sae.fit_sae", "WriteSAE (2605.12770)")
@@ -46,8 +46,8 @@ def info():
 def bench(model_name: str, arch: str, out: str | None):
     """Run InterpBench on a HuggingFace model.
 
-    Example: mechinterp bench EleutherAI/pythia-160m --arch transformer
-             mechinterp bench state-spaces/mamba-130m-hf --arch mamba
+    Example: polylens bench EleutherAI/pythia-160m --arch transformer
+             polylens bench state-spaces/mamba-130m-hf --arch mamba
     """
     from . import bench as bench_mod
     import torch

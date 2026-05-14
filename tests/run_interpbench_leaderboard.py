@@ -7,10 +7,10 @@ import time
 import torch
 from dataclasses import asdict
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/mechinterp-small/src")
+sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/polylens/src")
 
-from mechinterp_small import bench
-from mechinterp_small.kazdov_backend import load_kazdov_checkpoint
+from polylens import bench
+from polylens.kazdov_backend import load_kazdov_checkpoint
 
 
 CHECKPOINT_KAZDOV = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"
@@ -85,7 +85,7 @@ def main():
               f"{p.sae_rank1_recon:>6.3f} {p.ssm_state_variance_ratio:>6.3f}")
 
     # ---- Save JSON leaderboard ----
-    out_path = "/Users/kazdov/code/OriginalKazdov/mechinterp-small/_research/interpbench_leaderboard_v01.json"
+    out_path = "/Users/kazdov/code/OriginalKazdov/polylens/_research/interpbench_leaderboard_v01.json"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump([asdict(p) for p in profiles], f, indent=2, default=str)
