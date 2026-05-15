@@ -5,6 +5,7 @@
 [![CI](https://github.com/OriginalKazdov/archscope/actions/workflows/ci.yml/badge.svg)](https://github.com/OriginalKazdov/archscope/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OriginalKazdov/archscope/blob/main/examples/archscope_quickstart.ipynb)
 
 ## What archscope is
 
