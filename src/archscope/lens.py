@@ -218,14 +218,36 @@ class TunedLens(nn.Module):
 
         opt = torch.optim.AdamW(tl.translators.parameters(), lr=lr)
 
-        # Pre-extract all activations + target logits once
+        # Pre-extract all activations + target logits once.
+        # Ensure tokenizer has a pad token (GPT-2 family ships without one).
+        if getattr(tokenizer, "pad_token", None) is None and getattr(tokenizer, "eos_token", None) is not None:
+            tokenizer.pad_token = tokenizer.eos_token
+
         enc = tokenizer(calibration_texts, return_tensors="pt", padding=True,
                          truncation=True, max_length=max_len)
         inputs = {"input_ids": enc["input_ids"].to(device)}
+        if "attention_mask" in enc:
+            inputs["attention_mask"] = enc["attention_mask"].to(device)
+
+        # Per-row index of the last REAL (non-pad) token. If no attention_mask
+        # (single, unpadded sequence), the conventional last-position is fine.
+        if "attention_mask" in enc:
+            real_lengths = enc["attention_mask"].sum(dim=1).to(device)  # (B,)
+            last_idx = (real_lengths - 1).clamp(min=0)
+        else:
+            B = inputs["input_ids"].shape[0]
+            last_idx = torch.full((B,), inputs["input_ids"].shape[1] - 1,
+                                   dtype=torch.long, device=device)
+
+        def gather_last(acts: torch.Tensor) -> torch.Tensor:
+            # acts: (B, T, H) → (B, H) at each row's real last position.
+            B = acts.shape[0]
+            return acts[torch.arange(B, device=acts.device), last_idx]
+
         with torch.no_grad():
             records = backend.extract(inputs, layers=layer_names)
-            # Target: model's actual final logits at last position
-            final_residual = records[-1].activations[:, -1, :]
+            # Target: model's actual final logits at last REAL position per row.
+            final_residual = gather_last(records[-1].activations)
             if norm is not None:
                 final_residual = norm(final_residual)
             target_logits = unembed(final_residual).detach()    # (B, vocab)
@@ -235,7 +257,7 @@ class TunedLens(nn.Module):
             opt.zero_grad()
             total_loss = 0.0
             for i, rec in enumerate(records):
-                last = rec.activations[:, -1, :].detach()
+                last = gather_last(rec.activations).detach()
                 translated = tl.translators[i](last)
                 if norm is not None:
                     translated = norm(translated)

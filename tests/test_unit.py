@@ -22,7 +22,7 @@ def test_imports():
     import archscope
     from archscope import (probes, sae, neurons, attribute, backends,    # noqa: F401
                             circuits, transfer, bench, lens, diff)        # noqa: F401
-    assert archscope.__version__ == "0.2.5"
+    assert archscope.__version__ == "0.2.6"
 
 
 def test_loader_exports():
@@ -242,6 +242,40 @@ def test_neurons_layer_filter_rejects_nonmatching():
     from archscope.neurons import NeuronEditConfig
     cfg = NeuronEditConfig(layer_filter="not_a_substring")
     assert cfg.layer_filter == "not_a_substring"
+
+
+def test_induction_head_score_small_vocab_clear_error():
+    """induction_head_score raises a clear error when vocab is too small."""
+    from archscope.circuits import induction_head_score
+
+    class _TinyModel:
+        class config:
+            vocab_size = 40   # << 2*n_pairs + 100
+        def __call__(self, ids):
+            return torch.zeros(1, ids.shape[1], 40)
+
+    with pytest.raises(ValueError) as ei:
+        induction_head_score(_TinyModel(), n_pairs=20, n_trials=1)
+    assert "vocab window" in str(ei.value).lower() or "n_pairs" in str(ei.value)
+
+
+def test_dim_decompose_rejects_mamba_style_model():
+    """dim_decompose raises on models with no attention/MLP submodules."""
+    from archscope.attribute import dim_decompose
+
+    class _NoSubmods(torch.nn.Module):
+        def forward(self, **kwargs):
+            class Out:
+                logits = torch.zeros(1, 3, 8)
+            return Out()
+
+    with pytest.raises(ValueError) as ei:
+        dim_decompose(_NoSubmods(),
+                       prompt_a={"input_ids": torch.tensor([[1, 2, 3]])},
+                       prompt_b={"input_ids": torch.tensor([[4, 5, 6]])},
+                       layer_indices=[0, 1],
+                       metric_fn=lambda o: 0.0)
+    assert "attention" in str(ei.value).lower() or "submod" in str(ei.value).lower()
 
 
 if __name__ == "__main__":

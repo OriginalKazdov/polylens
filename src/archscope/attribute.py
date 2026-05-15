@@ -95,7 +95,9 @@ def activation_patch(
         module = resolve_layer_module(model, f"layer_{idx}.residual")
         if module is None:
             continue
-        src_h = src_rec.activations
+        # detach+clone for the same reason dim_decompose does: avoid aliasing
+        # a tensor that could be overwritten when the patched forward runs.
+        src_h = src_rec.activations.detach().clone()
 
         def hook(mod, inp, out, replacement=src_h):
             if isinstance(out, tuple):
@@ -154,6 +156,23 @@ def dim_decompose(
     metric_a = metric_fn(out_a)
     metric_b = metric_fn(out_b)
     total_gap = metric_a - metric_b
+
+    # Sanity check: at least one component must be resolvable for at least one
+    # requested layer. Architectures without attention/MLP submodules (Mamba,
+    # pure SSMs, custom recurrent blocks) would otherwise silently return an
+    # empty DIMResult.
+    resolvable = any(
+        resolve_subcomponent_module(model, idx, comp) is not None
+        for idx in layer_indices for comp in components
+    )
+    if not resolvable:
+        raise ValueError(
+            f"dim_decompose: none of components={components} were found on this "
+            f"model (type {type(model).__name__}). This method expects "
+            "attention/MLP submodules — it's transformer-style only. For "
+            "SSM/recurrent architectures, use activation_patch on the residual "
+            "stream instead."
+        )
 
     contributions: dict[str, float] = {}
     for comp in components:

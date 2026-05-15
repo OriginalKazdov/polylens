@@ -135,7 +135,10 @@ class TransformerBackend(Backend):
     """HuggingFace transformers backend — extracts residual stream per layer."""
 
     def layer_names(self) -> list[str]:
-        # Standard HF: model.model.layers[i] for decoder transformers
+        # Layer names are virtual handles consumed by .extract(), which uses
+        # HF's `output_hidden_states=True` to retrieve the residual stream
+        # (no direct attribute walk into model.model.layers[i] needed —
+        # so this works across HF decoder LM families).
         n_layers = getattr(self.model.config, "num_hidden_layers", 0)
         return [f"layer_{i}.residual" for i in range(n_layers)]
 

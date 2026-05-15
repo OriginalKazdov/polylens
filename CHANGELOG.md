@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.2.6 — 2026-05-14
+
+Second-round audit shook out 4 more issues. The v0.2.5 changelog also claimed
+a vocab-range fix in `circuits.induction_head_score` that was documented but
+never actually applied — that's also fixed here.
+
+### Fixed (HIGH)
+- **`circuits.induction_head_score` adaptive vocab window** — v0.2.5 changelog
+  promised this and shipped without it. Window is now
+  `[min(100, vocab//4), min(vocab, 40000))` and raises a clear `ValueError`
+  if it can't fit `2 * n_pairs` distinct tokens.
+- **`attribute.activation_patch` capture clone** — same class of silent
+  data-corruption bug v0.2.5 fixed in `dim_decompose`. The patch hook stored
+  a reference to the source-extraction tensor instead of a clone; for some HF
+  paths (KV-cache reuse, gradient checkpointing) the second forward pass
+  could mutate it.
+- **`lens.TunedLens.fit` trained on PAD positions** when calibration_texts
+  had varying length. Padding was enabled but `[:, -1, :]` selects the last
+  pad token for short rows. Now uses `attention_mask` to find each row's
+  real last-token position. Also auto-sets `pad_token = eos_token` if the
+  tokenizer lacks one (e.g. GPT-2 family).
+
+### Fixed (UX)
+- **`attribute.dim_decompose` raises on non-transformer architectures**
+  instead of silently returning a `DIMResult` with empty `contributions`.
+  Matches the strictness of `Backend.for_model`.
+
+### Docs
+- README's first code snippet now uses the documented `load_model` one-call
+  helper instead of duplicating the HF boilerplate. The helper was added in
+  v0.2.3 but the README never showcased it.
+- New **method × backend support matrix** in the README — answers "does
+  `dim_decompose` work on Mamba?" without grepping the source. Honest about
+  what's transformer-only and where lens degrades.
+- Cleaned a stale comment in `TransformerBackend.layer_names` (referenced
+  `model.model.layers[i]` even though extraction goes through HF's
+  `output_hidden_states=True` — there's no direct attribute walk).
+
 ## v0.2.5 — 2026-05-14
 
 Independent agent audit shook out 8 correctness/promise gaps. All fixed.

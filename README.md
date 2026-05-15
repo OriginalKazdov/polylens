@@ -21,17 +21,16 @@ It is **not**: a competitor to `transformer_lens` or `nnsight` (both are broader
 
 ```python
 import archscope as mi
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
-tok   = AutoTokenizer.from_pretrained("state-spaces/mamba-130m-hf")
-model = AutoModelForCausalLM.from_pretrained("state-spaces/mamba-130m-hf")
-
-backend = mi.backends.Backend.for_model(model, hint="mamba")
+# One call → HuggingFace model + tokenizer + the right backend
+model, tok, backend = mi.load_model("state-spaces/mamba-130m-hf", arch="mamba")
 
 # Extract Mamba's recurrent SSM state h_t (in addition to residual stream)
 ssm = backend.extract(tok("text", return_tensors="pt"), layers=["layer_12.ssm_state"])[0]
 # Shape: (B, intermediate_size, ssm_state_size) = (B, 1536, 16) for mamba-130m
 ```
+
+`load_model` handles `pad_token` setup, `model.eval()`, and backend auto-detection. If you'd rather drive `transformers` yourself, every method also accepts `backend_hint=...`.
 
 ---
 
@@ -67,6 +66,26 @@ ssm = backend.extract(tok("text", return_tensors="pt"), layers=["layer_12.ssm_st
 | `recurrent` | — (pass `hint="recurrent"`, subclass for full extract) | hidden state per layer |
 
 If `Backend.for_model(model)` is called on a model whose `config.model_type` isn't in the autodetect list, it raises a clear `ValueError` rather than silently picking a backend. Pass `hint="..."` explicitly for anything outside the list, or register a new backend via `Backend.register("name")`.
+
+### Method × backend support
+
+Not every method works on every architecture. The cross-product:
+
+| Method | transformer | mamba | kazdov | recurrent |
+|---|:---:|:---:|:---:|:---:|
+| `probes.fit_probe`               | ✅ | ✅ | ✅ | ✅ |
+| `sae.fit_sae` (Dense / Rank-1)   | ✅ | ✅ | ✅ | ✅ |
+| `neurons.find_neurons`           | ✅ | ✅ | ✅ | ✅ |
+| `attribute.activation_patch`     | ✅ | ✅ residual only | ✅ | ⚠️ subclass needed |
+| `attribute.dim_decompose`        | ✅ | ❌ no attention/MLP submods | ✅ | ❌ |
+| `circuits.*` (behavioural)       | ✅ | ✅ | ✅ | ✅ |
+| `lens.logit_lens`                | ✅ | ⚠️ degrades with depth — use `TunedLens` | ✅ | ⚠️ |
+| `lens.TunedLens.fit`             | ✅ | ✅ | ✅ | ⚠️ |
+| `diff.compare`                   | ✅ | ✅ | ✅ | ✅ |
+| `transfer.evaluate_transfer`     | ✅ ↔ any | ✅ ↔ any | ✅ ↔ any | ✅ ↔ any |
+| `bench.benchmark`                | ✅ | ✅ | ✅ | partial |
+
+❌ entries raise a clear `ValueError` rather than silently degrading.
 
 ---
 

@@ -25,7 +25,7 @@ Quick start::
     print(result.to_markdown())
 """
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens, diff
 from .loader import load_model, make_tokenize_fn

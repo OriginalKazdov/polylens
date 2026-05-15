@@ -74,12 +74,22 @@ def induction_head_score(
         else:
             vocab_size = 50257   # GPT-2 default
 
+    # Adaptive vocab window — defaults to [100, 40000) for full-size LMs but
+    # tightens for small-vocab toy models so we don't sample outside the range.
+    lo = min(100, max(1, vocab_size // 4))
+    hi = min(vocab_size, 40000)
+    if hi - lo < 2 * n_pairs:
+        raise ValueError(
+            f"induction_head_score: vocab window [{lo}, {hi}) has only "
+            f"{hi - lo} tokens but n_pairs={n_pairs} requires {2 * n_pairs} distinct ids. "
+            f"Lower n_pairs or pass a model with vocab_size >= {2 * n_pairs + 100}."
+        )
+
     successes = 0
     rank_sum = 0.0
     prob_target_sum = 0.0
     for trial in range(n_trials):
-        # Pick n_pairs random token pairs
-        tokens = rng.sample(range(100, min(vocab_size, 40000)), 2 * n_pairs)
+        tokens = rng.sample(range(lo, hi), 2 * n_pairs)
         seq = []
         pairs = []
         for i in range(n_pairs):
