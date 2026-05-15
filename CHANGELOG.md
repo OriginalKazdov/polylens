@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.2.7 — 2026-05-14
+
+DX fix surfaced by dogfooding archscope on a real cross-arch experiment
+(`examples/cross_arch_sentiment_transfer.py`).
+
+### Added
+- **`ProbeFit.direction`** and **`ProbeFit.bias`** properties — clean
+  accessors for the linear probe's 1D direction in activation space and
+  scalar bias. Before, users had to inspect `pf.probe.state_dict()` to
+  find the right keys (`net.weight`, `net.bias`) — friction for the
+  common case of "apply this probe to externally-transformed
+  activations" (e.g., after `archscope.transfer.learn_alignment`).
+  Raises `ValueError` for MLP probes (no single linear direction).
+
+  ```python
+  pf = ai.probes.fit_probe(model, pos_texts=[...], neg_texts=[...], ...)
+  d, b = pf.direction, pf.bias            # shape (hidden,), scalar
+  logits = activations @ d + b            # apply probe manually
+  ```
+
+### Examples
+- New: `examples/cross_arch_sentiment_transfer.py` — end-to-end
+  reproducible experiment using archscope to probe sentiment polarity
+  across Pythia-160m and Mamba-130m, with cross-arch probe transfer via
+  `archscope.transfer.learn_alignment`. ~150 lines.
+
 ## v0.2.6 — 2026-05-14
 
 Second-round audit shook out 4 more issues. The v0.2.5 changelog also claimed

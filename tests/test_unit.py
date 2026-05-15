@@ -22,7 +22,7 @@ def test_imports():
     import archscope
     from archscope import (probes, sae, neurons, attribute, backends,    # noqa: F401
                             circuits, transfer, bench, lens, diff)        # noqa: F401
-    assert archscope.__version__ == "0.2.6"
+    assert archscope.__version__ == "0.2.7"
 
 
 def test_loader_exports():
@@ -257,6 +257,37 @@ def test_induction_head_score_small_vocab_clear_error():
     with pytest.raises(ValueError) as ei:
         induction_head_score(_TinyModel(), n_pairs=20, n_trials=1)
     assert "vocab window" in str(ei.value).lower() or "n_pairs" in str(ei.value)
+
+
+def test_probefit_direction_and_bias_accessors():
+    """ProbeFit exposes .direction and .bias for linear probes."""
+    from archscope.probes import ProbeFit, ProbeConfig
+    torch.manual_seed(0)
+    pos = torch.randn(40, 8) + 1.5
+    neg = torch.randn(40, 8) - 1.5
+    cfg = ProbeConfig(layer_name="x", probe_type="linear")
+    pf = ProbeFit(cfg, input_dim=8)
+    pf.train(torch.cat([pos, neg]), torch.cat([torch.ones(40), torch.zeros(40)]),
+              epochs=30, batch_size=16)
+    d, b = pf.direction, pf.bias
+    assert d.shape == (8,), f"direction shape: {d.shape}"
+    assert b.dim() == 0, f"bias should be scalar: {b.shape}"
+    # Manual application matches what probe.score does (up to sigmoid).
+    test_act = torch.randn(3, 8)
+    manual_logits = test_act @ d + b
+    via_probe = pf.probe(test_act)
+    assert torch.allclose(manual_logits, via_probe, atol=1e-5), \
+        "direction @ acts + bias should equal probe(acts)"
+
+
+def test_probefit_direction_rejects_mlp():
+    """.direction raises on MLP probes."""
+    from archscope.probes import ProbeFit, ProbeConfig
+    cfg = ProbeConfig(layer_name="x", probe_type="mlp")
+    pf = ProbeFit(cfg, input_dim=8)
+    with pytest.raises(ValueError) as ei:
+        _ = pf.direction
+    assert "linear" in str(ei.value).lower()
 
 
 def test_dim_decompose_rejects_mamba_style_model():

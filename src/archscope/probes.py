@@ -108,6 +108,40 @@ class ProbeFit:
         with torch.no_grad():
             return torch.sigmoid(self.probe(activations.to(self.device)))
 
+    @property
+    def direction(self) -> torch.Tensor:
+        """1D direction vector in activation space (linear probes only).
+
+        Shape: ``(hidden_dim,)``. This is the projection axis the probe found —
+        useful for: applying a probe to externally-transformed activations
+        (e.g., after ``archscope.transfer.learn_alignment``), inspecting feature
+        geometry, or projecting interventions along the learned direction.
+
+        Raises ``ValueError`` for MLP probes (no single linear direction).
+        """
+        if self.config.probe_type != "linear":
+            raise ValueError(
+                f".direction is only defined for linear probes (got "
+                f"probe_type={self.config.probe_type!r}). MLP probes don't have a "
+                "single direction in activation space."
+            )
+        return self.probe.net.weight.detach().squeeze(0).clone()
+
+    @property
+    def bias(self) -> torch.Tensor:
+        """Scalar bias term (linear probes only). Shape: ``()``.
+
+        Together with ``.direction``, lets you score arbitrary activations as
+        ``logits = acts @ direction + bias`` without going through the probe
+        module — handy for cross-arch transfer experiments.
+        """
+        if self.config.probe_type != "linear":
+            raise ValueError(
+                f".bias is only defined for linear probes (got "
+                f"probe_type={self.config.probe_type!r})."
+            )
+        return self.probe.net.bias.detach().squeeze().clone()
+
 
 def _auroc(logits: torch.Tensor, labels: torch.Tensor) -> float:
     """AUROC from logits + binary labels.
