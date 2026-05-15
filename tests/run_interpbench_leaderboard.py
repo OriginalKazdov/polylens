@@ -86,7 +86,7 @@ def main():
               f"{p.sae_rank1_recon:>6.3f} {p.ssm_state_variance_ratio:>6.3f}")
 
     # ---- Save JSON leaderboard ----
-    out_path = "str(__import__("pathlib").Path(__file__).parent.parent / "_research")/interpbench_leaderboard_v01.json"
+    out_path = str(__import__("pathlib").Path(__file__).parent.parent / "_research" / "interpbench_leaderboard_v01.json")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump([asdict(p) for p in profiles], f, indent=2, default=str)

@@ -25,16 +25,13 @@ Quick start::
     print(result.to_markdown())
 """
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 from . import probes, sae, neurons, attribute, backends, circuits, transfer, bench, lens, diff
 from .loader import load_model, make_tokenize_fn
 
-# Kazdov backend registers itself on import — optional, only if kazdov repo present
-try:
-    from . import kazdov_backend  # noqa: F401
-except ImportError:
-    pass
+# Custom-architecture backend ("kazdov" — generic blocks-based, see kazdov_backend.py)
+from . import kazdov_backend  # noqa: F401
 
 __all__ = [
     "probes", "sae", "neurons", "attribute", "backends",

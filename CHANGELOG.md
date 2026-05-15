@@ -1,5 +1,46 @@
 # Changelog
 
+## v0.2.5 — 2026-05-14
+
+Independent agent audit shook out 8 correctness/promise gaps. All fixed.
+
+### Fixed (HIGH)
+- **`attribute.dim_decompose` was silently wrong.** The capture hook stored a
+  *reference* to the component output tensor; the next forward pass reused the
+  same module buffers and overwrote it. DIM attributions could degrade to zero
+  with no error. Now `detach().clone()` at capture time.
+- **`attribute.activation_patch` shape mismatch could install a hook that
+  crashed deep inside the model.** Now raises a clear `ValueError` upfront if
+  `prompt_source.input_ids` and `prompt_target.input_ids` have different
+  shapes.
+- **`Backend.for_model` autodetect silently fell through to `RecurrentBackend`
+  for any `config.model_type` it didn't recognize**, including several models
+  the README claimed worked. The autodetect table is now explicit (19 model
+  types — Llama/Mistral/Qwen2/Qwen3/Pythia/GPT-Neo/GPT-J/Falcon/MPT/Bloom/OPT/
+  Phi/Phi-3/Gemma/Gemma-2/StarCoder2/Mamba/Mamba-2 + GPT-2) and raises
+  `ValueError` for anything else. Pass `hint="..."` to use a backend for an
+  unrecognized model_type.
+- **`archscope bench --arch mamba` always returned `ssm_state_variance_ratio
+  = NaN`** because the CLI didn't pass `ssm_layer`. Now defaults to mid-depth.
+
+### Fixed (MED)
+- **`circuits.induction_head_score` hardcoded a `[100, 40000)` vocab window**
+  and broke on small-vocab models. Adapts to `vocab_size` with a clear error
+  if there isn't enough headroom for `n_pairs` distinct tokens.
+- **`circuits.copy_score` assumed BPE leading-space tokens (`" word"`).**
+  Failed silently on SentencePiece tokenizers (Llama-3/Qwen). Falls back to
+  the bare word and skips pathologically empty encodings.
+- **`diff.compare` crashed on tokenizers without a `pad_token`** (GPT-2 family
+  ships without one). Mirrors `loader.load_model` by setting
+  `pad_token = eos_token` when missing.
+- **`neurons.NeuronEditConfig.layer_filter` was documented but never
+  applied.** Now used as a substring filter on `backend.layer_names()`, with
+  a clear error if the filter matches no layers.
+
+### Docs
+- README backend table now lists the exact `config.model_type` strings that
+  auto-detect, and is explicit that anything else needs `hint="..."`.
+
 ## v0.2.4 — 2026-05-14
 
 Engineering hygiene release. No new API; existing API gets honest about

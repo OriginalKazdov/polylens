@@ -224,7 +224,7 @@ def main():
         print(f"{src:>10} ↔ {tgt:<10} | {a_to_b:>7.3f} | {b_to_a:>7.3f} | {asym:>10.3f}")
 
     # Save results
-    out_path = "str(__import__("pathlib").Path(__file__).parent.parent / "_research")/transfer_matrix_3arch.json"
+    out_path = str(__import__("pathlib").Path(__file__).parent.parent / "_research" / "transfer_matrix_3arch.json")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)

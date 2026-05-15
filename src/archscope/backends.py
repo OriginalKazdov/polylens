@@ -44,20 +44,57 @@ class Backend(abc.ABC):
             return klass
         return deco
 
+    # HF model_type → backend name. Transformer family covers most HF decoder LMs;
+    # add new families here as they ship. Auto-detect intentionally raises when
+    # nothing matches (silent fallback caused real bugs in v0.2.4).
+    _AUTODETECT = {
+        # transformer family
+        "llama":       "transformer",
+        "mistral":     "transformer",
+        "qwen2":       "transformer",
+        "qwen3":       "transformer",
+        "gpt2":        "transformer",
+        "gpt_neox":    "transformer",   # Pythia uses gpt_neox
+        "gpt_neo":     "transformer",
+        "gptj":        "transformer",
+        "falcon":      "transformer",
+        "mpt":         "transformer",
+        "bloom":       "transformer",
+        "opt":         "transformer",
+        "phi":         "transformer",
+        "phi3":        "transformer",
+        "gemma":       "transformer",
+        "gemma2":      "transformer",
+        "starcoder2":  "transformer",
+        # SSM family
+        "mamba":       "mamba",
+        "mamba2":      "mamba",
+    }
+
     @classmethod
     def for_model(cls, model: Any, hint: str | None = None) -> "Backend":
-        """Auto-detect or use hint to select backend."""
-        if hint and hint in cls._registry:
-            return cls._registry[hint](model)
-        # Auto-detect via attribute introspection
-        if hasattr(model, "config") and getattr(model.config, "model_type", None) in ("llama", "gpt2", "qwen2", "qwen3"):
-            return cls._registry["transformer"](model)
-        if hasattr(model, "config") and getattr(model.config, "model_type", "") in ("mamba", "mamba2"):
-            return cls._registry["mamba"](model)
-        # Default fallback
-        if "recurrent" in cls._registry:
-            return cls._registry["recurrent"](model)
-        raise ValueError(f"No backend matches model {type(model).__name__}. Register via Backend.register('name').")
+        """Auto-detect (or use hint) to select a backend.
+
+        Raises ValueError if no hint is provided and the model's ``config.model_type``
+        is not in the autodetect table. Pass ``hint=...`` explicitly for any model
+        that's not auto-detected, or register a custom backend via
+        ``Backend.register('name')``.
+        """
+        if hint:
+            if hint in cls._registry:
+                return cls._registry[hint](model)
+            raise ValueError(
+                f"Unknown backend hint '{hint}'. Registered: {sorted(cls._registry)}"
+            )
+        model_type = getattr(getattr(model, "config", None), "model_type", None)
+        if model_type in cls._AUTODETECT:
+            return cls._registry[cls._AUTODETECT[model_type]](model)
+        raise ValueError(
+            f"No backend matches model with config.model_type={model_type!r} "
+            f"(type {type(model).__name__}). Pass hint=... explicitly, or "
+            f"register a custom backend via Backend.register('name'). "
+            f"Auto-detected types: {sorted(cls._AUTODETECT)}"
+        )
 
     def __init__(self, model: Any):
         self.model = model

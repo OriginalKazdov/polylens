@@ -66,6 +66,17 @@ def activation_patch(
     Returns:
         PatchResult with the fraction of behavioral gap closed by patching.
     """
+    # Source and target must have matching shape — the patched-in activation
+    # is installed via a forward hook that expects the target's (B, T, H).
+    src_ids = prompt_source.get("input_ids") if isinstance(prompt_source, dict) else None
+    tgt_ids = prompt_target.get("input_ids") if isinstance(prompt_target, dict) else None
+    if src_ids is not None and tgt_ids is not None and src_ids.shape != tgt_ids.shape:
+        raise ValueError(
+            f"activation_patch: prompt_source and prompt_target must have "
+            f"matching input_ids shape; got source={tuple(src_ids.shape)} "
+            f"vs target={tuple(tgt_ids.shape)}. Pad/truncate to the same length."
+        )
+
     backend = Backend.for_model(model, hint=backend_hint)
     layer_names = [f"layer_{i}.residual" for i in layer_indices]
 
@@ -156,7 +167,10 @@ def dim_decompose(
             captured: list = []
 
             def capture(mod, inp, out, store=captured):
-                store.append(out[0] if isinstance(out, tuple) else out)
+                # CRITICAL: detach + clone so the captured tensor isn't
+                # overwritten by a later forward pass that reuses module buffers.
+                tensor = out[0] if isinstance(out, tuple) else out
+                store.append(tensor.detach().clone())
             capture_hooks.append(module.register_forward_hook(capture))
             src_acts_by_layer[idx] = captured
 

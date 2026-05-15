@@ -155,6 +155,10 @@ def compare(
         raise ValueError("base and fine_tuned have different layer structure — "
                          "they must share architecture")
 
+    # Ensure tokenizer has a pad token (GPT-2 family ships without one).
+    if getattr(tokenizer, "pad_token", None) is None and getattr(tokenizer, "eos_token", None) is not None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     # Tokenize calibration
     enc = tokenizer(calibration_texts, return_tensors="pt", padding=True,
                      truncation=True, max_length=max_length)

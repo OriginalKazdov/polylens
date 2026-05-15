@@ -89,6 +89,16 @@ def bench(model_name: str, arch: str, out: str | None) -> None:
         return tok(texts, return_tensors="pt", padding=True, truncation=True, max_length=32)
 
     arch_family = {"transformer": "transformer", "mamba": "ssm", "kazdov": "hybrid"}[arch]
+
+    # For Mamba, pick a representative SSM-state layer at mid-depth so the
+    # ssm_state_variance_ratio metric is populated (otherwise bench returns NaN).
+    extra: dict = {}
+    if arch == "mamba":
+        from .backends import Backend
+        backend = Backend.for_model(model, hint="mamba")
+        n_residual = sum(1 for ln in backend.layer_names() if ".residual" in ln)
+        extra["ssm_layer"] = max(0, n_residual // 2)
+
     profile = bench_mod.benchmark(
         model_name=model_name,
         model=model,
@@ -96,6 +106,7 @@ def bench(model_name: str, arch: str, out: str | None) -> None:
         backend_hint=arch,
         arch_family=arch_family,
         tokenize_fn=tokenize_fn,
+        **extra,
     )
 
     markdown = bench_mod.profile_to_markdown(profile)

@@ -17,7 +17,7 @@ from ._utils import resolve_layer_module
 @dataclass
 class NeuronEditConfig:
     top_frac: float = 0.001         # top 0.1% by default
-    layer_filter: str | None = None # e.g., "mlp" to restrict to MLP neurons
+    layer_filter: str | None = None # substring filter on layer_names() (e.g. "residual")
     mode: str = "scalar"            # "scalar" (multiply by m) or "ablate" (m=0)
 
 
@@ -87,8 +87,15 @@ def find_neurons(
     config = config or NeuronEditConfig()
     backend = Backend.for_model(model, hint=backend_hint)
 
-    # Get all layers (will filter to MLP later if requested)
     all_layers = backend.layer_names()
+    if config.layer_filter is not None:
+        all_layers = [ln for ln in all_layers if config.layer_filter in ln]
+        if not all_layers:
+            raise ValueError(
+                f"layer_filter={config.layer_filter!r} matched no layers. "
+                f"Available substrings include: "
+                f"{sorted({ln.split('.', 1)[-1] for ln in backend.layer_names()})}"
+            )
 
     # Forward both classes, collect final-token activations
     harm_acts = backend.extract(inputs_harmful, layers=all_layers)

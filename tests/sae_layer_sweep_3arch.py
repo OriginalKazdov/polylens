@@ -184,7 +184,7 @@ def main():
     print("\n(ratio < 1.0 means rank-1 has lower reconstruction error)")
 
     # Save
-    out_path = "str(__import__("pathlib").Path(__file__).parent.parent / "_research")/sae_layer_sweep_3arch.json"
+    out_path = str(__import__("pathlib").Path(__file__).parent.parent / "_research" / "sae_layer_sweep_3arch.json")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)

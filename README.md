@@ -59,12 +59,14 @@ ssm = backend.extract(tok("text", return_tensors="pt"), layers=["layer_12.ssm_st
 
 ### Backends
 
-| Backend | Models | Specific |
+| Backend | Auto-detected `model_type` | What you get |
 |---|---|---|
-| `transformer` | Pythia, GPT-2, Llama, Mistral, Qwen, MPT, Falcon, GPT-Neo | residual stream |
-| `mamba` | Mamba, Mamba-2 | residual + explicit `.ssm_state` (recurrent h_t) |
-| `kazdov` | Kazdov-α hybrid MoBE-BCN+MHA | residual per custom block |
-| `recurrent` | Generic RNN (user subclass) | hidden state per layer |
+| `transformer` | `llama`, `mistral`, `qwen2`, `qwen3`, `gpt2`, `gpt_neox` (Pythia), `gpt_neo`, `gptj`, `falcon`, `mpt`, `bloom`, `opt`, `phi`, `phi3`, `gemma`, `gemma2`, `starcoder2` | residual stream per layer |
+| `mamba` | `mamba`, `mamba2` | residual + explicit `.ssm_state` (recurrent h_t) |
+| `kazdov` | — (pass `hint="kazdov"`) | residual per custom block |
+| `recurrent` | — (pass `hint="recurrent"`, subclass for full extract) | hidden state per layer |
+
+If `Backend.for_model(model)` is called on a model whose `config.model_type` isn't in the autodetect list, it raises a clear `ValueError` rather than silently picking a backend. Pass `hint="..."` explicitly for anything outside the list, or register a new backend via `Backend.register("name")`.
 
 ---
 

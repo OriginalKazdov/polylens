@@ -98,7 +98,7 @@ def main():
     print("  • concentration relative ≈ 0 → highly confident predictions (concentrated)")
 
     # Save
-    out_path = "str(__import__("pathlib").Path(__file__).parent.parent / "_research")/circuits_3arch.json"
+    out_path = str(__import__("pathlib").Path(__file__).parent.parent / "_research" / "circuits_3arch.json")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)

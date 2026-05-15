@@ -154,12 +154,20 @@ def copy_score(
         words = rng.sample(word_pool, n_words)
         prompt = f"list: {' '.join(words)}. list: "
         ids = tokenizer(prompt, return_tensors="pt").input_ids.to(device)
-        ids.shape[1]
 
-        # Token IDs for target words (first token of each)
+        # Different tokenizers handle whitespace differently:
+        # - BPE (GPT-2 / NeoX / Pythia / Llama-2): " word" → leading-space token
+        # - SentencePiece (Llama-3, Qwen, T5): "▁word" → leading-underscore token
+        # Try " word" first; fall back to bare word for tokenizers that don't
+        # use a space prefix.
         target_tokens = []
         for w in words:
-            target_tokens.append(tokenizer(" " + w, add_special_tokens=False).input_ids[0])
+            ids_w = tokenizer(" " + w, add_special_tokens=False).input_ids
+            if not ids_w:
+                ids_w = tokenizer(w, add_special_tokens=False).input_ids
+            if not ids_w:
+                continue  # pathological; skip
+            target_tokens.append(ids_w[0])
 
         # Autoregressively predict n_words tokens, chaining the model's own
         # predictions (not teacher-forcing) — measures cumulative copy ability.

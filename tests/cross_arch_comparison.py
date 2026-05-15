@@ -184,7 +184,7 @@ def main():
 
     # Save results JSON for later analysis
     import json
-    out_path = "str(__import__("pathlib").Path(__file__).parent.parent / "_research")/cross_arch_results.json"
+    out_path = str(__import__("pathlib").Path(__file__).parent.parent / "_research" / "cross_arch_results.json")
     import os
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
