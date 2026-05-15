@@ -82,7 +82,11 @@ def run_hf_model(display, hf_id, hint, family, extra):
 def run_kazdov():
     if not KAZDOV_CHECKPOINT.exists():
         return None
-    from archscope.kazdov_backend import load_kazdov_checkpoint
+    # _kazdov_loader is a local-only helper that depends on the private
+    # kazdov repo; it's not shipped to PyPI.
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from _kazdov_loader import load_kazdov_checkpoint
     print(f"\n[loading] kazdov-α-98m (local: {KAZDOV_CHECKPOINT})…")
     model, tok = load_kazdov_checkpoint(str(KAZDOV_CHECKPOINT))
     profile = bench.benchmark(

@@ -14,14 +14,15 @@ import json
 import os
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent / "src"))
 
 from archscope import sae
 from archscope.backends import Backend
-from archscope.kazdov_backend import load_kazdov_checkpoint
+import sys as _sys; _sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent / "scripts"))
+from _kazdov_loader import load_kazdov_checkpoint
 
 
-CHECKPOINT_KAZDOV = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"
+CHECKPOINT_KAZDOV = __import__("os").environ.get("KAZDOV_CHECKPOINT", "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha")
 PYTHIA_NAME = "EleutherAI/pythia-160m"
 MAMBA_NAME = "state-spaces/mamba-130m-hf"
 
@@ -183,7 +184,7 @@ def main():
     print("\n(ratio < 1.0 means rank-1 has lower reconstruction error)")
 
     # Save
-    out_path = "/Users/kazdov/code/OriginalKazdov/archscope/_research/sae_layer_sweep_3arch.json"
+    out_path = "str(__import__("pathlib").Path(__file__).parent.parent / "_research")/sae_layer_sweep_3arch.json"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(all_results, f, indent=2, default=str)

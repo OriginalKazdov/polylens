@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.2.4 — 2026-05-14
+
+Engineering hygiene release. No new API; existing API gets honest about
+what works for whom.
+
+### Fixed
+- **`kazdov_backend` no longer ships dead code.** Previously the
+  `load_kazdov_checkpoint()` function was importable from the PyPI
+  package but only worked on the maintainer's machine (it hardcoded
+  `~/code/OriginalKazdov/kazdov/`). The function has been moved to
+  `scripts/_kazdov_loader.py`, which is NOT shipped to PyPI.
+
+  The `KazdovBackend` class itself stays — it's actually generic: it
+  works on any PyTorch model exposing `model.blocks` (a `ModuleList`)
+  and `model.d_model` (or `hidden_size`). The docstring now documents
+  this explicitly. So users with custom architectures CAN register a
+  model via `Backend.for_model(model, hint="kazdov")` — they just need
+  to load it themselves.
+
+- **`KazdovBackend.hidden_dim()`** now also handles `model.hidden_size`
+  (not just `model.d_model`).
+
+### Cleaned up
+- All test files (`tests/*.py`) used to hardcode
+  `/Users/kazdov/code/OriginalKazdov/archscope/src` in `sys.path.insert`.
+  Replaced with `Path(__file__).parent.parent / "src"` so anyone
+  who clones the repo can run the tests.
+- Kazdov-checkpoint path is now overridable via the `KAZDOV_CHECKPOINT`
+  environment variable; the maintainer's default is kept as fallback.
+
+### Performance verified on Pythia-160m (CPU)
+- `load_model`:                  3.5 s
+- `fit_probe` (sentiment, n=16): 0.16 s
+- `logit_lens` (12 layers):      0.07 s
+- `TunedLens.fit` (10 epochs):   2.25 s
+- Dense SAE (50 epochs, n=144):  0.11 s
+- All 3 circuits:                4.69 s
+- Full `bench.benchmark`:        6.39 s
+
 ## v0.2.3 — 2026-05-14
 
 Engineering pass focused on developer experience. No new methods; existing

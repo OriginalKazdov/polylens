@@ -7,13 +7,14 @@ import time
 import torch
 from dataclasses import asdict
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent / "src"))
 
 from archscope import bench
-from archscope.kazdov_backend import load_kazdov_checkpoint
+import sys as _sys; _sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent / "scripts"))
+from _kazdov_loader import load_kazdov_checkpoint
 
 
-CHECKPOINT_KAZDOV = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"
+CHECKPOINT_KAZDOV = __import__("os").environ.get("KAZDOV_CHECKPOINT", "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha")
 
 
 def main():
@@ -85,7 +86,7 @@ def main():
               f"{p.sae_rank1_recon:>6.3f} {p.ssm_state_variance_ratio:>6.3f}")
 
     # ---- Save JSON leaderboard ----
-    out_path = "/Users/kazdov/code/OriginalKazdov/archscope/_research/interpbench_leaderboard_v01.json"
+    out_path = "str(__import__("pathlib").Path(__file__).parent.parent / "_research")/interpbench_leaderboard_v01.json"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump([asdict(p) for p in profiles], f, indent=2, default=str)

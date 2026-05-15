@@ -22,7 +22,7 @@ def test_imports():
     import archscope
     from archscope import (probes, sae, neurons, attribute, backends,
                             circuits, transfer, bench, lens, diff)
-    assert archscope.__version__ == "0.2.3"
+    assert archscope.__version__ == "0.2.4"
 
 
 def test_loader_exports():

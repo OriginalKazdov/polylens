@@ -9,14 +9,15 @@ import sys
 import time
 import torch
 
-sys.path.insert(0, "/Users/kazdov/code/OriginalKazdov/archscope/src")
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent / "src"))
 
 from archscope import probes, sae, neurons
 from archscope.backends import Backend
-from archscope.kazdov_backend import load_kazdov_checkpoint
+import sys as _sys; _sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent / "scripts"))
+from _kazdov_loader import load_kazdov_checkpoint
 
 
-CHECKPOINT = "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha"
+CHECKPOINT = __import__("os").environ.get("KAZDOV_CHECKPOINT", "/Users/kazdov/code/OriginalKazdov/_models/kazdov-98m-alpha")
 
 
 def tokenize(tokenizer, texts: list[str]) -> dict:

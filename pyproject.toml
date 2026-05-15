@@ -1,6 +1,6 @@
 [project]
 name = "archscope"
-version = "0.2.3"
+version = "0.2.4"
 description = "Lightweight workbench for cross-architecture mechanistic interpretability experiments on small models"
 readme = "README.md"
 authors = [{name = "Juan Cruz Dovzak"}]
